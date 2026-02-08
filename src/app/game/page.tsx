@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { nanoid } from "nanoid"
 import { toast } from "sonner"
+import { motion, useMotionValue, useTransform, animate } from "framer-motion"
 import { useGameStore } from "@/features/game/store/useGameStore"
 import { CATEGORIES } from "@/data/categories"
 import { MIN_PLAYERS, MAX_PLAYERS } from "@/lib/constants"
@@ -162,7 +163,33 @@ function RevealPhase() {
   const settings = useGameStore((state) => state.settings)
   const revealNext = useGameStore((state) => state.revealNext)
 
-  const [isPressing, setIsPressing] = useState(false)
+  const [hasSeen, setHasSeen] = useState(false)
+  const [isPeeking, setIsPeeking] = useState(false)
+  const y = useMotionValue(0)
+  const opacity = useTransform(y, [0, -120], [1, 0.3])
+  const scale = useTransform(y, [0, -120], [1, 0.95])
+  const peekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  useEffect(() => {
+    // Reset states when player changes
+    setHasSeen(false)
+    setIsPeeking(false)
+    
+    // Cleanup timeout
+    if (peekTimeoutRef.current) {
+      clearTimeout(peekTimeoutRef.current)
+      peekTimeoutRef.current = null
+    }
+
+    // Animate y to 0 to ensure it's at the correct position
+    animate(y, 0, { type: "spring", stiffness: 300, damping: 30 })
+
+    return () => {
+      if (peekTimeoutRef.current) {
+        clearTimeout(peekTimeoutRef.current)
+      }
+    }
+  }, [phase.type === "reveal" ? phase.currentPlayerId : null, y])
 
   if (phase.type !== "reveal") return null
 
@@ -170,20 +197,60 @@ function RevealPhase() {
   const isImpostor = currentPlayer?.id === impostorId
   const remainingCount = phase.remainingPlayerIds.length
 
-  const handlePointerDown = () => {
-    setIsPressing(true)
+  // Generate avatar emoji based on player name
+  const getAvatarEmoji = (name: string): string => {
+    const emojis = ["👤", "🎮", "🎯", "🎲", "🎪", "🎨", "🎭", "🎬", "🎧", "🎸"]
+    const index = name.charCodeAt(0) % emojis.length
+    return emojis[index] ?? "👤"
   }
 
-  const handlePointerUp = () => {
-    setIsPressing(false)
+  const handleDragEnd = (
+    _event: MouseEvent | TouchEvent | PointerEvent,
+    info: { offset: { y: number } }
+  ) => {
+    const springConfig = { type: "spring" as const, stiffness: 300, damping: 30 }
+    
+    if (info.offset.y <= -120) {
+      // Superó el threshold: mostrar contenido y marcar como visto
+      setHasSeen(true)
+      setIsPeeking(true)
+      
+      // Limpiar timeout anterior si existe
+      if (peekTimeoutRef.current) {
+        clearTimeout(peekTimeoutRef.current)
+      }
+      
+      // Primero animar hacia arriba para mostrar el contenido
+      animate(y, -160, springConfig).then(() => {
+        // Ocultar automáticamente después de 500ms
+        peekTimeoutRef.current = setTimeout(() => {
+          setIsPeeking(false)
+          // Animar de vuelta a y=0
+          animate(y, 0, springConfig)
+          peekTimeoutRef.current = null
+        }, 500)
+      })
+    } else {
+      // No superó el threshold: animar de vuelta a y=0 inmediatamente
+      setIsPeeking(false)
+      animate(y, 0, springConfig)
+    }
   }
 
-  const handlePointerCancel = () => {
-    setIsPressing(false)
-  }
-
-  const handleMouseLeave = () => {
-    setIsPressing(false)
+  const handleNextPlayer = () => {
+    // Limpiar timeout si existe
+    if (peekTimeoutRef.current) {
+      clearTimeout(peekTimeoutRef.current)
+      peekTimeoutRef.current = null
+    }
+    
+    setHasSeen(false)
+    setIsPeeking(false)
+    
+    // Asegurar que y esté en 0 antes de avanzar
+    animate(y, 0, { type: "spring", stiffness: 300, damping: 30 }).then(() => {
+      revealNext()
+    })
   }
 
   return (
@@ -196,68 +263,111 @@ function RevealPhase() {
             : "Último jugador"}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-4">
-          <div
-            className="rounded-lg border p-4 text-center select-none touch-none"
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerCancel}
-            onMouseLeave={handleMouseLeave}
-          >
-            <p className="text-sm text-muted-foreground mb-2">Tu rol:</p>
-            <div
-              className={`transition-all duration-150 ${
-                isPressing ? "blur-0 opacity-100" : "blur-md opacity-50"
-              }`}
-            >
-              <p className="text-2xl font-bold">
-                {isImpostor ? "🕵️ Impostor" : "👤 Tripulante"}
-              </p>
-              {isImpostor ? (
-                <div className="mt-4 space-y-2">
-                  <p className="text-lg font-semibold">SOS EL IMPOSTOR</p>
-                  {settings.hintMode === "easy_similar" && impostorHintWord && (
-                    <div className="mt-3">
-                      <p className="text-sm text-muted-foreground mb-1">
-                        Tu pista:
-                      </p>
-                      <p className="text-xl font-semibold">{impostorHintWord}</p>
-                    </div>
-                  )}
-                  {settings.hintMode === "hard_category" &&
-                    impostorHintCategoryName && (
-                      <div className="mt-3">
-                        <p className="text-sm text-muted-foreground mb-1">
-                          Categoría:
-                        </p>
-                        <p className="text-xl font-semibold">
-                          {impostorHintCategoryName}
-                        </p>
-                      </div>
-                    )}
+      <CardContent className="space-y-6">
+        <motion.div
+          drag={isPeeking ? false : "y"}
+          dragConstraints={{ top: -220, bottom: 0 }}
+          dragElastic={0.2}
+          dragMomentum={false}
+          dragDirectionLock
+          onDragEnd={handleDragEnd}
+          style={{ y, opacity, scale }}
+          className={isPeeking ? "" : "cursor-grab active:cursor-grabbing"}
+        >
+          {!isPeeking ? (
+            <Card className="rounded-lg border p-8 text-center">
+              <div className="mb-6">
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-4xl">
+                  {currentPlayer?.name ? getAvatarEmoji(currentPlayer.name) : "👤"}
                 </div>
-              ) : (
-                secretWord && (
-                  <div className="mt-4">
-                    <p className="text-sm text-muted-foreground mb-2">
-                      La palabra secreta es:
-                    </p>
-                    <p className="text-xl font-semibold">{secretWord}</p>
+                <p className="text-xl font-bold">{currentPlayer?.name}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Deslizá hacia arriba para ver tu rol
+                </p>
+                <div className="flex justify-center">
+                  <motion.div
+                    animate={{ y: [0, -8, 0] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                    className="text-2xl"
+                  >
+                    ↑
+                  </motion.div>
+                </div>
+              </div>
+            </Card>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card className="rounded-lg border p-6 text-center">
+                <div className="mb-4">
+                  <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-3xl">
+                    {currentPlayer?.name ? getAvatarEmoji(currentPlayer.name) : "👤"}
                   </div>
-                )
-              )}
-            </div>
-            {!isPressing && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                Mantén presionado para revelar
-              </p>
-            )}
-          </div>
-          <Button onClick={revealNext} className="w-full" size="lg">
-            Ocultar y pasar
+                  <p className="text-lg font-semibold">{currentPlayer?.name}</p>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Tu rol:</p>
+                    <p className="text-2xl font-bold">
+                      {isImpostor ? "🕵️ Impostor" : "👤 Tripulante"}
+                    </p>
+                  </div>
+                  {isImpostor ? (
+                    <div className="space-y-3">
+                      <p className="text-lg font-semibold">SOS EL IMPOSTOR</p>
+                      {settings.hintMode === "easy_similar" && impostorHintWord && (
+                        <div className="mt-3 rounded-lg bg-muted/50 p-3">
+                          <p className="text-sm text-muted-foreground mb-1">
+                            Tu pista:
+                          </p>
+                          <p className="text-xl font-semibold">{impostorHintWord}</p>
+                        </div>
+                      )}
+                      {settings.hintMode === "hard_category" &&
+                        impostorHintCategoryName && (
+                          <div className="mt-3 rounded-lg bg-muted/50 p-3">
+                            <p className="text-sm text-muted-foreground mb-1">
+                              Categoría:
+                            </p>
+                            <p className="text-xl font-semibold">
+                              {impostorHintCategoryName}
+                            </p>
+                          </div>
+                        )}
+                    </div>
+                  ) : (
+                    secretWord && (
+                      <div className="mt-4 rounded-lg bg-muted/50 p-3">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          La palabra secreta es:
+                        </p>
+                        <p className="text-xl font-semibold">{secretWord}</p>
+                      </div>
+                    )
+                  )}
+                </div>
+              </Card>
+            </motion.div>
+          )}
+        </motion.div>
+        {hasSeen && (
+          <Button
+            onClick={handleNextPlayer}
+            className="w-full relative z-10"
+            size="lg"
+          >
+            Jugador siguiente
           </Button>
-        </div>
+        )}
       </CardContent>
     </Card>
   )
