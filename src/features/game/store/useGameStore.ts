@@ -1,6 +1,11 @@
 import { create } from "zustand"
 import { DEFAULT_ROUND_SECONDS, DEFAULT_TURN_SECONDS, MIN_PLAYERS } from "@/lib/constants"
-import { CATEGORIES } from "@/data/categories"
+import {
+  GAME_CATEGORIES,
+  getCategoryById,
+  type CategoryId,
+} from "@/data/game-categories"
+import { WORDS_BY_CATEGORY, SIMILAR_PAIRS_BY_CATEGORY } from "@/data/words-by-category"
 import { AVATARS } from "@/data/avatars"
 import { PlayerSchema, type Player } from "../models/player"
 import { GameSettingsSchema, type GameSettings } from "../models/settings"
@@ -36,7 +41,7 @@ const defaultSettings: GameSettings = {
   roundSeconds: DEFAULT_ROUND_SECONDS,
   turnSeconds: DEFAULT_TURN_SECONDS,
   impostorsCount: 1,
-  categoryId: CATEGORIES[0]?.id ?? "",
+  categoryId: GAME_CATEGORIES[0]?.id ?? "",
   hintMode: "none",
 }
 
@@ -123,13 +128,16 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       return "Debes seleccionar una categoría"
     }
 
-    const category = CATEGORIES.find((cat) => cat.id === settings.categoryId)
+    const categoryId = settings.categoryId as CategoryId
+    const category = getCategoryById(categoryId)
     if (!category) {
       return "Categoría no encontrada"
     }
 
-    const hasWords = category.words !== undefined && category.words.length > 0
-    const hasPairs = category.pairs !== undefined && category.pairs.length > 0
+    const words = WORDS_BY_CATEGORY[categoryId]
+    const pairs = SIMILAR_PAIRS_BY_CATEGORY[categoryId]
+    const hasWords = words !== undefined && words.length > 0
+    const hasPairs = pairs !== undefined && pairs.length > 0
 
     if (!hasWords && !hasPairs) {
       return "La categoría debe tener palabras o pares"
@@ -156,22 +164,22 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }
 
     // Select word/pair based on effective hint mode
-    if (effectiveHintMode === "easy_similar" && hasPairs && category.pairs) {
+    if (effectiveHintMode === "easy_similar" && hasPairs && pairs) {
       // easy_similar: use pairs, crew word for crew, impostor word as hint
-      const selectedPair = pickRandom(category.pairs)
+      const selectedPair = pickRandom(pairs)
       secretWord = selectedPair.crew
       impostorHintWord = selectedPair.impostor
-    } else if (effectiveHintMode === "hard_category" && hasWords && category.words) {
+    } else if (effectiveHintMode === "hard_category" && hasWords && words) {
       // hard_category: use words, impostor only gets category name
-      secretWord = pickRandom(category.words)
-      impostorHintCategoryName = category.name
+      secretWord = pickRandom(words)
+      impostorHintCategoryName = category.label
     } else {
       // none mode (or fallback): use words, no hints
-      if (hasWords && category.words) {
-        secretWord = pickRandom(category.words)
-      } else if (hasPairs && category.pairs) {
+      if (hasWords && words) {
+        secretWord = pickRandom(words)
+      } else if (hasPairs && pairs) {
         // Fallback: if only pairs available but mode is none/hard_category, use crew word
-        const selectedPair = pickRandom(category.pairs)
+        const selectedPair = pickRandom(pairs)
         secretWord = selectedPair.crew
       } else {
         return "No se pudo determinar la palabra secreta"

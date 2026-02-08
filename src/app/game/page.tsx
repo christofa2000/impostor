@@ -6,7 +6,7 @@ import { nanoid } from "nanoid"
 import { toast } from "sonner"
 import { motion, useMotionValue, useTransform, animate } from "framer-motion"
 import { useGameStore } from "@/features/game/store/useGameStore"
-import { CATEGORIES } from "@/data/categories"
+import { GAME_CATEGORIES } from "@/data/game-categories"
 import { AVATARS } from "@/data/avatars"
 import { MIN_PLAYERS, MAX_PLAYERS } from "@/lib/constants"
 import { Button } from "@/components/ui/button"
@@ -193,9 +193,9 @@ function SetupPhase() {
             value={settings.categoryId}
             onChange={(e) => setSettings({ categoryId: e.target.value })}
           >
-            {CATEGORIES.map((cat) => (
+            {GAME_CATEGORIES.map((cat) => (
               <option key={cat.id} value={cat.id}>
-                {cat.name}
+                {cat.label}
               </option>
             ))}
           </select>
