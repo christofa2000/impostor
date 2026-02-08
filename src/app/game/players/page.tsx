@@ -179,7 +179,7 @@ export default function PlayersPage() {
         </div>
 
         {/* Fixed bottom button */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-black/40 backdrop-blur-xl border-t border-white/10 px-4 pt-4 pb-6">
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[linear-gradient(to_top,rgba(0,0,0,0.75),rgba(0,0,0,0))] backdrop-blur-md px-4 pt-4 pb-6">
           <Button
             onClick={handleSave}
             variant="primaryGlow"
