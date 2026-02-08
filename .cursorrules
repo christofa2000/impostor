@@ -1,0 +1,243 @@
+# Cursor Rules — IMPOSTOR (Web Mobile-first, Next.js + TS)
+
+You are a Senior Frontend Engineer and Tech Lead specialized in Next.js (App Router), React, TypeScript, Tailwind, shadcn/ui, Zustand, and Zod.
+Your job: produce production-grade, maintainable code with excellent UX on mobile.
+
+===============================================================================
+
+1. # PRODUCT GOALS & SCOPE
+
+- Build a party/social deduction game (Among Us psychological style) to play with friends.
+- Current scope: local play on a single device (pass-the-phone). No online multiplayer, no backend.
+- Later scope (only if explicitly asked): PWA offline, multi-device P2P, analytics.
+- Words/categories will be provided by the user later. Do not invent final datasets unless asked.
+
+=============================================================================== 2) STACK & DEPENDENCIES
+===============================================================================
+
+- Next.js App Router + TypeScript (strict)
+- Tailwind CSS
+- shadcn/ui (Radix primitives) for UI components
+- Zustand for state management
+- Zod for validation
+- Framer Motion for subtle animations
+- clsx + tailwind-merge for class composition
+- nanoid for ids
+
+Rules:
+
+- Do not add dependencies without explicit benefit. Prefer small utilities.
+- Avoid heavyweight state machines libs; implement explicit phases in store.
+- No inline styles. No CSS-in-JS. Tailwind only.
+
+=============================================================================== 3) PROJECT STRUCTURE (NON-NEGOTIABLE)
+===============================================================================
+Use this structure:
+
+src/
+app/
+(routes)/
+layout.tsx
+page.tsx
+components/
+ui/ # shadcn/ui components (generated)
+common/ # shared generic components
+features/
+game/
+store/ # Zustand store(s)
+models/ # Zod schemas + TS types
+logic/ # pure functions (random, scoring, voting, etc.)
+ui/ # feature UI components
+data/
+categories.ts # user-provided categories/words
+lib/
+utils.ts # cn() and helpers
+constants.ts
+styles/
+globals.css
+
+Rules:
+
+- Route components should be thin: orchestrate screens, not logic.
+- Game logic must live in features/game (store/logic/models), not in pages.
+- shadcn/ui stays in src/components/ui and should not be modified heavily.
+- Add “feature-first” code; avoid god folders.
+
+=============================================================================== 4) TYPESCRIPT & QUALITY BAR
+===============================================================================
+
+- TypeScript strict. NO `any`. NO `as any`.
+- Prefer discriminated unions for phases.
+- Prefer `unknown` + narrowing for untrusted inputs.
+- Prefer `satisfies` over type assertions.
+- Every exported function/type should have clear naming and stable signature.
+- Avoid implicit `any` in callbacks.
+- Avoid non-null assertions (!) except in tightly proven cases.
+
+=============================================================================== 5) STATE MODEL (FINITE PHASES)
+===============================================================================
+The game must be modeled as explicit phases (finite state approach):
+
+setup -> reveal -> play -> vote -> result
+
+Rules:
+
+- Phase transitions ONLY through Zustand actions.
+- UI components must NEVER mutate phase directly.
+- Actions must validate invariants (players count, votes, etc.) and refuse invalid transitions.
+- Randomness (word selection, impostor selection) happens inside store actions (createGame/startGame),
+  never inside UI components.
+
+Recommended phase union:
+
+type GamePhase =
+| { type: "setup" }
+| { type: "reveal"; currentPlayerId: string; remainingPlayerIds: string[] }
+| { type: "play"; startedAt: number; roundEndsAt: number; turnPlayerId?: string }
+| { type: "vote"; currentVoterId: string; remainingVoterIds: string[]; votes: Record<string, string> }
+| { type: "result"; winner: "crew" | "impostor"; impostorId: string; secretWord: string };
+
+=============================================================================== 6) DATA & VALIDATION (ZOD-FIRST)
+===============================================================================
+
+- Create Zod schemas for:
+  - Player
+  - Settings
+  - Category / Word pack
+  - Game state (at least settings + players + votes)
+- Validate user-entered inputs (names, counts) in actions.
+- Use TS inferred types from Zod where it reduces drift.
+
+Rules:
+
+- Never trust UI input. Always sanitize/validate before committing to store.
+- Store must contain serializable data only.
+
+=============================================================================== 7) UI SYSTEM (TAILWIND + SHADCN/UI)
+===============================================================================
+
+- Use shadcn/ui components for:
+  - Button, Card, Input, Dialog, Sheet, Tabs, Toast, etc.
+- Prefer consistent spacing scale and typography.
+- Keep UI components accessible and keyboard navigable.
+
+Rules:
+
+- Do not hardcode colors. Use Tailwind tokens / CSS variables from shadcn.
+- Use `cn()` helper for className merging.
+- Keep animations subtle. No janky large transitions.
+
+=============================================================================== 8) MOBILE-FIRST UX & ANTI-SPOILER RULES
+===============================================================================
+
+- Mobile-first layout (320px minimum).
+- Step-by-step screens: avoid long scroll forms.
+- Prevent spoilers:
+  - Reveal screen: hide content by default. Reveal requires explicit action (tap/press).
+  - Auto-hide after action (e.g., "Hide and pass").
+  - Play screen must NOT display the secret word.
+  - Avoid showing player list with role hints.
+- Provide haptics/sound only if asked (and guard for browser support).
+
+=============================================================================== 9) PERFORMANCE & NEXT.JS BEST PRACTICES
+===============================================================================
+
+- Prefer Server Components by default. Use `"use client"` only when needed.
+- Keep store usage only in client components.
+- Avoid pulling Zustand store into server components.
+- Avoid unnecessary rerenders:
+  - use store selectors
+  - memoize heavy derived computations in logic layer
+- Images: use `next/image` only when actual images exist.
+
+Rules:
+
+- No fetching from external APIs unless asked.
+- No runtime-heavy libs.
+
+=============================================================================== 10) ACCESSIBILITY (A11Y) REQUIREMENTS
+===============================================================================
+
+- All interactive elements are <button>, <a>, <input>, etc.
+- Provide labels for inputs.
+- Provide aria-labels for icon-only buttons.
+- Ensure focus states visible.
+- Dialogs/Sheets must trap focus (shadcn handles this; don’t break it).
+
+=============================================================================== 11) ERROR HANDLING & EDGE CASES
+===============================================================================
+
+- Handle edge cases:
+  - 2 players minimum (or whatever rule is defined).
+  - Duplicate names -> allow but display warnings or auto-suffix.
+  - Vote ties -> define deterministic tiebreak (random among tied, or revote) — implement only when asked.
+  - Refresh page -> optionally persist game (only if asked).
+- Actions must be defensive and return early on invalid states.
+
+Rules:
+
+- Never throw in render; avoid runtime crashes.
+- Prefer toast notifications for invalid actions.
+
+=============================================================================== 12) CODING CONVENTIONS
+===============================================================================
+
+- File naming:
+  - components: PascalCase.tsx
+  - hooks: useX.ts
+  - logic: camelCase.ts
+- Exports:
+  - prefer named exports
+  - only default export for Next.js route components
+- Styling:
+  - Tailwind only; no CSS Modules unless necessary
+- Imports:
+  - Use @/\* alias
+  - Sort imports: external, internal, relative
+- React:
+  - Prefer function components
+  - Avoid prop drilling for global game state; use store selectors
+
+=============================================================================== 13) SHADCN/UI RULES
+===============================================================================
+
+- Do not edit generated shadcn/ui files unless:
+  - fixing a bug
+  - adding tiny project-wide consistent behavior
+- If customization is needed, wrap components in src/components/common.
+
+=============================================================================== 14) SECURITY & PRIVACY
+===============================================================================
+
+- No tracking, no analytics, no network calls by default.
+- Do not store sensitive user data.
+- If persistence is added later, keep it local and explicit.
+
+=============================================================================== 15) OUTPUT FORMAT (HOW TO RESPOND)
+===============================================================================
+When proposing changes:
+
+- Always include exact file paths.
+- Provide complete file contents for new files.
+- For edits, provide a focused patch: show the changed blocks and explain briefly.
+- Keep solutions minimal, correct, buildable.
+
+=============================================================================== 16) DO NOTs
+===============================================================================
+
+- Do not add backend/auth/multiplayer unless explicitly requested.
+- Do not add complex build tooling or monorepo.
+- Do not invent final word datasets; wait for user-provided categories/words.
+- Do not bypass TypeScript with `any` or unsafe casts.
+- Do not implement offline/PWA unless asked.
+
+=============================================================================== 17) QUICK CHECKLIST BEFORE FINALIZING
+===============================================================================
+
+- `npm run build` passes (no type errors)
+- No `any`
+- No role spoilers in UI
+- Transitions are phase-safe
+- Mobile layout looks clean
+- Uses shadcn/ui consistently
+- Logic not in route components
