@@ -1,11 +1,13 @@
 import { create } from "zustand"
 import { DEFAULT_ROUND_SECONDS, DEFAULT_TURN_SECONDS, MIN_PLAYERS } from "@/lib/constants"
 import { CATEGORIES } from "@/data/categories"
+import { AVATARS } from "@/data/avatars"
 import { PlayerSchema, type Player } from "../models/player"
 import { GameSettingsSchema, type GameSettings } from "../models/settings"
 import type { GamePhase } from "../models/phase"
 import { pickRandom, shuffle } from "../logic/random"
 import { ensureUniquePlayerNames } from "../logic/game-helpers"
+import { assignMissingAvatars } from "../logic/avatars"
 
 interface GameState {
   phase: GamePhase
@@ -20,6 +22,7 @@ interface GameState {
 interface GameActions {
   setPlayers: (players: Player[]) => void
   setSettings: (partial: Partial<GameSettings>) => void
+  setPlayerAvatar: (playerId: string, avatar: string | null) => void
   createGame: () => string | null
   revealNext: () => void
   nextTurn: () => void
@@ -79,6 +82,31 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }
   },
 
+  setPlayerAvatar: (playerId: string, avatar: string | null) => {
+    const state = get()
+    if (state.phase.type !== "setup") {
+      return
+    }
+
+    const playerIndex = state.players.findIndex((p) => p.id === playerId)
+    if (playerIndex === -1) {
+      return
+    }
+
+    try {
+      const updatedPlayers = state.players.map((player) => {
+        if (player.id === playerId) {
+          const updatedPlayer = { ...player, avatar }
+          return PlayerSchema.parse(updatedPlayer)
+        }
+        return player
+      })
+      set({ players: updatedPlayers })
+    } catch (error) {
+      console.error("Invalid avatar:", error)
+    }
+  },
+
   createGame: () => {
     const state = get()
     if (state.phase.type !== "setup") {
@@ -107,7 +135,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       return "La categoría debe tener palabras o pares"
     }
 
-    const impostor = pickRandom(players)
+    // Assign missing avatares before creating the game
+    const playersWithAvatares = assignMissingAvatars(players, AVATARS)
+    set({ players: playersWithAvatares })
+
+    const impostor = pickRandom(playersWithAvatares)
     let secretWord: string
     let impostorHintWord: string | null = null
     let impostorHintCategoryName: string | null = null
@@ -146,7 +178,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       }
     }
 
-    const playerIds = players.map((p) => p.id)
+    const playerIds = playersWithAvatares.map((p) => p.id)
     const shuffledPlayerIds = shuffle(playerIds)
     const firstPlayerId = shuffledPlayerIds[0] ?? ""
     const remainingPlayerIds = shuffledPlayerIds.slice(1)

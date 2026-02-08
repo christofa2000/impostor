@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
+import Image from "next/image"
 import { nanoid } from "nanoid"
 import { toast } from "sonner"
 import { motion, useMotionValue, useTransform, animate } from "framer-motion"
 import { useGameStore } from "@/features/game/store/useGameStore"
 import { CATEGORIES } from "@/data/categories"
+import { AVATARS } from "@/data/avatars"
 import { MIN_PLAYERS, MAX_PLAYERS } from "@/lib/constants"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,45 +18,92 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
+import { pickRandom } from "@/features/game/logic/random"
 import type { Player } from "@/features/game/models/player"
 
 function SetupPhase() {
   const setPlayers = useGameStore((state) => state.setPlayers)
+  const setPlayerAvatar = useGameStore((state) => state.setPlayerAvatar)
   const settings = useGameStore((state) => state.settings)
   const setSettings = useGameStore((state) => state.setSettings)
   const createGame = useGameStore((state) => state.createGame)
 
-  const [playerNames, setPlayerNames] = useState<string[]>(["", "", ""])
+  const [localPlayers, setLocalPlayers] = useState<Player[]>([
+    { id: nanoid(), name: "" },
+    { id: nanoid(), name: "" },
+    { id: nanoid(), name: "" },
+  ])
   const [showError, setShowError] = useState(false)
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
 
   const handlePlayerNameChange = (index: number, value: string) => {
-    const newNames = [...playerNames]
-    newNames[index] = value
-    setPlayerNames(newNames)
+    const newPlayers = [...localPlayers]
+    newPlayers[index] = { ...newPlayers[index], name: value }
+    setLocalPlayers(newPlayers)
   }
 
   const addPlayer = () => {
-    if (playerNames.length < MAX_PLAYERS) {
-      setPlayerNames([...playerNames, ""])
+    if (localPlayers.length < MAX_PLAYERS) {
+      setLocalPlayers([...localPlayers, { id: nanoid(), name: "" }])
     }
   }
 
   const removePlayer = (index: number) => {
-    if (playerNames.length > MIN_PLAYERS) {
-      const newNames = playerNames.filter((_, i) => i !== index)
-      setPlayerNames(newNames)
+    if (localPlayers.length > MIN_PLAYERS) {
+      const newPlayers = localPlayers.filter((_, i) => i !== index)
+      setLocalPlayers(newPlayers)
     }
   }
 
+  const handleAvatarClick = (playerId: string) => {
+    setSelectedPlayerId(playerId)
+    setAvatarDialogOpen(true)
+  }
+
+  const handleAvatarSelect = (avatarSrc: string) => {
+    if (!selectedPlayerId) return
+
+    const newPlayers = localPlayers.map((player) => {
+      if (player.id === selectedPlayerId) {
+        return { ...player, avatar: avatarSrc }
+      }
+      return player
+    })
+    setLocalPlayers(newPlayers)
+    setAvatarDialogOpen(false)
+    setSelectedPlayerId(null)
+  }
+
+  const handleRandomAvatar = () => {
+    if (!selectedPlayerId) return
+
+    const usedAvatares = new Set(
+      localPlayers
+        .filter((p) => p.id !== selectedPlayerId && p.avatar)
+        .map((p) => p.avatar as string)
+    )
+    const available = AVATARS.filter((avatar) => !usedAvatares.has(avatar))
+    const randomAvatar =
+      available.length > 0 ? pickRandom(available) : pickRandom(AVATARS)
+
+    handleAvatarSelect(randomAvatar)
+  }
+
   const handleStart = () => {
-    const validPlayers: Player[] = playerNames
-      .map((name) => name.trim())
-      .filter((name) => name.length > 0)
-      .map((name) => ({
-        id: nanoid(),
-        name,
+    const validPlayers: Player[] = localPlayers
+      .map((player) => ({
+        ...player,
+        name: player.name.trim(),
       }))
+      .filter((player) => player.name.length > 0)
 
     if (validPlayers.length < MIN_PLAYERS) {
       toast.error(`Necesitas al menos ${MIN_PLAYERS} jugadores`)
@@ -70,6 +119,8 @@ function SetupPhase() {
     }
   }
 
+  const selectedPlayer = localPlayers.find((p) => p.id === selectedPlayerId)
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -80,14 +131,33 @@ function SetupPhase() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-3">
-          {playerNames.map((name, index) => (
-            <div key={index} className="flex gap-2">
+          {localPlayers.map((player, index) => (
+            <div key={player.id} className="flex gap-2">
               <Input
                 placeholder={`Jugador ${index + 1}`}
-                value={name}
+                value={player.name}
                 onChange={(e) => handlePlayerNameChange(index, e.target.value)}
+                className="flex-1"
               />
-              {playerNames.length > MIN_PLAYERS && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => handleAvatarClick(player.id)}
+                className="shrink-0"
+              >
+                {player.avatar ? (
+                  <Image
+                    src={player.avatar}
+                    alt="Avatar"
+                    width={32}
+                    height={32}
+                    className="rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs">Elegir</span>
+                )}
+              </Button>
+              {localPlayers.length > MIN_PLAYERS && (
                 <Button
                   variant="outline"
                   size="icon"
@@ -100,7 +170,7 @@ function SetupPhase() {
           ))}
         </div>
 
-        {playerNames.length < MAX_PLAYERS && (
+        {localPlayers.length < MAX_PLAYERS && (
           <Button variant="outline" onClick={addPlayer} className="w-full">
             + Agregar jugador
           </Button>
@@ -152,6 +222,44 @@ function SetupPhase() {
           Empezar
         </Button>
       </CardContent>
+
+      <Dialog open={avatarDialogOpen} onOpenChange={setAvatarDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Elegí un avatar</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3">
+              {AVATARS.map((avatarSrc) => (
+                <button
+                  key={avatarSrc}
+                  onClick={() => handleAvatarSelect(avatarSrc)}
+                  className={cn(
+                    "relative aspect-square rounded-lg overflow-hidden border-2 transition-all",
+                    selectedPlayer?.avatar === avatarSrc
+                      ? "border-primary ring-2 ring-primary/20"
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  <Image
+                    src={avatarSrc}
+                    alt="Avatar"
+                    fill
+                    className="object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleRandomAvatar}
+              className="w-full"
+            >
+              Random
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
@@ -282,8 +390,20 @@ function RevealPhase() {
             style={{ opacity: revealOpacity, scale: revealScale }}
           >
             <div className="mb-4">
-              <div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 text-4xl shadow-[inset_0_2px_8px_rgba(0,0,0,0.3)]">
-                {currentPlayer?.name ? getAvatarEmoji(currentPlayer.name) : "👤"}
+              <div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 shadow-[inset_0_2px_8px_rgba(0,0,0,0.3)] overflow-hidden">
+                {currentPlayer?.avatar ? (
+                  <Image
+                    src={currentPlayer.avatar}
+                    alt={currentPlayer.name ?? "Avatar"}
+                    width={96}
+                    height={96}
+                    className="rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="text-4xl">
+                    {currentPlayer?.name ? getAvatarEmoji(currentPlayer.name) : "👤"}
+                  </span>
+                )}
               </div>
               <p className="text-lg font-semibold">{currentPlayer?.name}</p>
             </div>
@@ -366,35 +486,59 @@ function RevealPhase() {
             dragDirectionLock
             onDragEnd={handleDragEnd}
             style={{ y: coverY, opacity: frontOpacity }}
-            className="absolute inset-0 flex flex-col items-center justify-center bg-card p-8 text-center cursor-grab active:cursor-grabbing"
+            className="absolute inset-0 overflow-hidden flex flex-col items-center justify-center text-center cursor-grab active:cursor-grabbing"
           >
-            <div className="mb-6">
-              <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 text-5xl shadow-[inset_0_2px_8px_rgba(0,0,0,0.3)]">
-                {currentPlayer?.name ? getAvatarEmoji(currentPlayer.name) : "👤"}
-              </div>
-              <p className="text-xl font-bold">{currentPlayer?.name}</p>
+            {/* Avatar como imagen de fondo full-bleed */}
+            <div className="absolute inset-0">
+              {currentPlayer?.avatar ? (
+                <Image
+                  src={currentPlayer.avatar}
+                  alt={currentPlayer.name ?? "Avatar"}
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10">
+                  <span className="text-9xl">
+                    {currentPlayer?.name ? getAvatarEmoji(currentPlayer.name) : "👤"}
+                  </span>
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Deslizá hacia arriba para ver tu rol
-              </p>
-              <div className="flex justify-center">
-                <motion.div
-                  animate={{ y: [0, -8, 0] }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                  className={cn(
-                    "text-2xl",
-                    isImpostor
-                      ? "text-[hsl(var(--impostor))]"
-                      : "text-[hsl(var(--crew))]"
-                  )}
-                >
-                  ↑
-                </motion.div>
+            
+            {/* Overlay oscuro para legibilidad */}
+            <div className="absolute inset-0 bg-black/45" />
+            
+            {/* Contenido de texto encima */}
+            <div className="relative z-10 flex flex-col items-center justify-center gap-6 p-8">
+              <div className="space-y-4">
+                <p className="text-2xl font-bold text-white drop-shadow-lg">
+                  {currentPlayer?.name}
+                </p>
+                <div className="space-y-3">
+                  <p className="text-sm text-white/90 drop-shadow-md">
+                    Deslizá hacia arriba para ver tu rol
+                  </p>
+                  <div className="flex justify-center">
+                    <motion.div
+                      animate={{ y: [0, -8, 0] }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                      className={cn(
+                        "text-3xl drop-shadow-lg",
+                        isImpostor
+                          ? "text-[hsl(var(--impostor))]"
+                          : "text-[hsl(var(--crew))]"
+                      )}
+                    >
+                      ↑
+                    </motion.div>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
