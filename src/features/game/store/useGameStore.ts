@@ -28,6 +28,7 @@ interface GameActions {
   setPlayers: (players: Player[]) => void
   setSettings: (partial: Partial<GameSettings>) => void
   setPlayerAvatar: (playerId: string, avatar: string | null) => void
+  setRoundMinutes: (minutes: number) => void
   toggleCategory: (categoryId: CategoryId) => void
   selectAllCategories: () => void
   clearCategories: () => void
@@ -114,6 +115,24 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       set({ players: updatedPlayers })
     } catch (error) {
       console.error("Invalid avatar:", error)
+    }
+  },
+
+  setRoundMinutes: (minutes: number) => {
+    const state = get()
+    if (state.phase.type !== "setup") {
+      return
+    }
+
+    const clampedMinutes = Math.max(1, Math.min(7, Math.round(minutes)))
+    const roundSeconds = clampedMinutes * 60
+
+    try {
+      const updatedSettings = { ...state.settings, roundSeconds }
+      const validatedSettings = GameSettingsSchema.parse(updatedSettings)
+      set({ settings: validatedSettings })
+    } catch (error) {
+      console.error("Invalid roundSeconds:", error)
     }
   },
 

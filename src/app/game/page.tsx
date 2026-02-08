@@ -49,28 +49,20 @@ function SetupPhase() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="w-10" />
-        <h1 className="text-xl font-semibold text-zinc-50">Configuración</h1>
-        <div className="w-10" />
+      {/* Header Image */}
+      <div className="flex justify-center mb-6">
+        <Image
+          src="/impostor.png"
+          alt="Detective"
+          width={120}
+          height={120}
+          className="h-auto w-[96px] sm:w-[120px]"
+          priority={false}
+        />
       </div>
 
       {/* Menu Items */}
       <div className="space-y-3 pb-28">
-        {/* Modo de Juego */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🎮</span>
-            <div>
-              <div className="text-sm font-medium text-zinc-50">
-                Modo de Juego
-              </div>
-              <div className="text-xs text-muted-foreground">Clásico</div>
-            </div>
-          </div>
-        </div>
-
         {/* Jugadores */}
         <Link href="/game/players">
           <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center cursor-pointer hover:bg-white/[0.07] transition-colors">
@@ -196,17 +188,20 @@ function SetupPhase() {
         </Link>
 
         {/* Duración */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">⏱️</span>
-            <div>
-              <div className="text-sm font-medium text-zinc-50">Duración</div>
-              <div className="text-xs text-muted-foreground">
-                {roundMinutes} minutos
+        <Link href="/game/duration">
+          <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center cursor-pointer hover:bg-white/[0.07] transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">⏱️</span>
+              <div>
+                <div className="text-sm font-medium text-zinc-50">Duración</div>
+                <div className="text-xs text-muted-foreground">
+                  {roundMinutes} minutos
+                </div>
               </div>
             </div>
+            <span className="text-muted-foreground">›</span>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Fixed bottom CTA */}
