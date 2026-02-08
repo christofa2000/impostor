@@ -9,7 +9,7 @@ export const AVATARS = [
   "/avatars/fede.webp",
   "/avatars/arik.webp",
   "/avatars/diego.webp",
-  "/avatars/av-11.webp",
+  "/avatars/seba.webp",
   "/avatars/av-12.webp",
 ] as const;
 

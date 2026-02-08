@@ -28,11 +28,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="relative min-h-screen bg-background">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(124,58,237,0.15),_transparent_60%)]" />
-          <div className="relative z-10">
+        <div className="relative min-h-screen bg-[radial-gradient(circle_at_top,_#0f172a,_#0b1220_40%,_#050a14)]">
+          <main className="max-w-md mx-auto px-4 pt-6 pb-24 min-h-screen">
             {children}
-          </div>
+          </main>
         </div>
         <Toaster />
       </body>

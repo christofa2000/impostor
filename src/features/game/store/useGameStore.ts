@@ -28,20 +28,25 @@ interface GameActions {
   setPlayers: (players: Player[]) => void
   setSettings: (partial: Partial<GameSettings>) => void
   setPlayerAvatar: (playerId: string, avatar: string | null) => void
+  toggleCategory: (categoryId: CategoryId) => void
+  selectAllCategories: () => void
+  clearCategories: () => void
+  isCategorySelected: (categoryId: CategoryId) => boolean
   createGame: () => string | null
   revealNext: () => void
   nextTurn: () => void
   startVote: () => void
   selectVote: (targetPlayerId: string | null) => void
   confirmVote: () => void
-  reset: () => void
+  resetRound: () => void
+  resetAll: () => void
 }
 
 const defaultSettings: GameSettings = {
   roundSeconds: DEFAULT_ROUND_SECONDS,
   turnSeconds: DEFAULT_TURN_SECONDS,
   impostorsCount: 1,
-  categoryId: GAME_CATEGORIES[0]?.id ?? "",
+  categoryIds: GAME_CATEGORIES[0] ? [GAME_CATEGORIES[0].id] : [],
   hintMode: "none",
 }
 
@@ -112,6 +117,76 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }
   },
 
+  toggleCategory: (categoryId: CategoryId) => {
+    const state = get()
+    if (state.phase.type !== "setup") {
+      return
+    }
+
+    const currentCategoryIds = state.settings.categoryIds
+    const isSelected = currentCategoryIds.includes(categoryId)
+
+    let newCategoryIds: CategoryId[]
+    if (isSelected) {
+      // Remove category, but ensure at least one remains
+      if (currentCategoryIds.length <= 1) {
+        return // Cannot remove the last category
+      }
+      newCategoryIds = currentCategoryIds.filter((id) => id !== categoryId)
+    } else {
+      // Add category
+      newCategoryIds = [...currentCategoryIds, categoryId]
+    }
+
+    try {
+      const updatedSettings = { ...state.settings, categoryIds: newCategoryIds }
+      const validatedSettings = GameSettingsSchema.parse(updatedSettings)
+      set({ settings: validatedSettings })
+    } catch (error) {
+      console.error("Invalid categoryIds:", error)
+    }
+  },
+
+  selectAllCategories: () => {
+    const state = get()
+    if (state.phase.type !== "setup") {
+      return
+    }
+
+    const allCategoryIds: CategoryId[] = GAME_CATEGORIES.map((cat) => cat.id)
+
+    try {
+      const updatedSettings = { ...state.settings, categoryIds: allCategoryIds }
+      const validatedSettings = GameSettingsSchema.parse(updatedSettings)
+      set({ settings: validatedSettings })
+    } catch (error) {
+      console.error("Invalid categoryIds:", error)
+    }
+  },
+
+  clearCategories: () => {
+    const state = get()
+    if (state.phase.type !== "setup") {
+      return
+    }
+
+    // Set to first category as default (cannot be empty)
+    const firstCategoryId: CategoryId[] = GAME_CATEGORIES[0] ? [GAME_CATEGORIES[0].id] : []
+
+    try {
+      const updatedSettings = { ...state.settings, categoryIds: firstCategoryId }
+      const validatedSettings = GameSettingsSchema.parse(updatedSettings)
+      set({ settings: validatedSettings })
+    } catch (error) {
+      console.error("Invalid categoryIds:", error)
+    }
+  },
+
+  isCategorySelected: (categoryId: CategoryId): boolean => {
+    const state = get()
+    return state.settings.categoryIds.includes(categoryId)
+  },
+
   createGame: () => {
     const state = get()
     if (state.phase.type !== "setup") {
@@ -124,18 +199,19 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       return `Necesitas al menos ${MIN_PLAYERS} jugadores`
     }
 
-    if (!settings.categoryId) {
-      return "Debes seleccionar una categoría"
+    if (settings.categoryIds.length === 0) {
+      return "Debes seleccionar al menos una categoría"
     }
 
-    const categoryId = settings.categoryId as CategoryId
-    const category = getCategoryById(categoryId)
+    // Choose a random category from selected ones
+    const selectedCategoryId = pickRandom(settings.categoryIds)
+    const category = getCategoryById(selectedCategoryId)
     if (!category) {
       return "Categoría no encontrada"
     }
 
-    const words = WORDS_BY_CATEGORY[categoryId]
-    const pairs = SIMILAR_PAIRS_BY_CATEGORY[categoryId]
+    const words = WORDS_BY_CATEGORY[selectedCategoryId]
+    const pairs = SIMILAR_PAIRS_BY_CATEGORY[selectedCategoryId]
     const hasWords = words !== undefined && words.length > 0
     const hasPairs = pairs !== undefined && pairs.length > 0
 
@@ -365,10 +441,24 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     })
   },
 
-  reset: () => {
+  resetRound: () => {
+    const state = get()
+    set({
+      phase: { type: "setup" },
+      secretWord: null,
+      impostorId: null,
+      impostorHintWord: null,
+      impostorHintCategoryName: null,
+      // Preserve players and settings
+      players: state.players,
+      settings: state.settings,
+    })
+  },
+
+  resetAll: () => {
     set({
       ...initialState,
-      settings: get().settings,
+      settings: defaultSettings,
       secretWord: null,
       impostorId: null,
       impostorHintWord: null,

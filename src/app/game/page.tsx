@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { nanoid } from "nanoid"
 import { toast } from "sonner"
 import { motion, useMotionValue, useTransform, animate } from "framer-motion"
@@ -18,6 +19,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { PremiumCard } from "@/components/ui/premium-card"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Dialog,
   DialogContent,
@@ -29,248 +32,189 @@ import { pickRandom } from "@/features/game/logic/random"
 import type { Player } from "@/features/game/models/player"
 
 function SetupPhase() {
-  const setPlayers = useGameStore((state) => state.setPlayers)
-  const setPlayerAvatar = useGameStore((state) => state.setPlayerAvatar)
+  const players = useGameStore((state) => state.players)
   const settings = useGameStore((state) => state.settings)
   const setSettings = useGameStore((state) => state.setSettings)
   const createGame = useGameStore((state) => state.createGame)
 
-  const [localPlayers, setLocalPlayers] = useState<Player[]>([
-    { id: nanoid(), name: "" },
-    { id: nanoid(), name: "" },
-    { id: nanoid(), name: "" },
-  ])
-  const [showError, setShowError] = useState(false)
-  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
-
-  const handlePlayerNameChange = (index: number, value: string) => {
-    const newPlayers = [...localPlayers]
-    newPlayers[index] = { ...newPlayers[index], name: value }
-    setLocalPlayers(newPlayers)
-  }
-
-  const addPlayer = () => {
-    if (localPlayers.length < MAX_PLAYERS) {
-      setLocalPlayers([...localPlayers, { id: nanoid(), name: "" }])
-    }
-  }
-
-  const removePlayer = (index: number) => {
-    if (localPlayers.length > MIN_PLAYERS) {
-      const newPlayers = localPlayers.filter((_, i) => i !== index)
-      setLocalPlayers(newPlayers)
-    }
-  }
-
-  const handleAvatarClick = (playerId: string) => {
-    setSelectedPlayerId(playerId)
-    setAvatarDialogOpen(true)
-  }
-
-  const handleAvatarSelect = (avatarSrc: string) => {
-    if (!selectedPlayerId) return
-
-    const newPlayers = localPlayers.map((player) => {
-      if (player.id === selectedPlayerId) {
-        return { ...player, avatar: avatarSrc }
-      }
-      return player
-    })
-    setLocalPlayers(newPlayers)
-    setAvatarDialogOpen(false)
-    setSelectedPlayerId(null)
-  }
-
-  const handleRandomAvatar = () => {
-    if (!selectedPlayerId) return
-
-    const usedAvatares = new Set(
-      localPlayers
-        .filter((p) => p.id !== selectedPlayerId && p.avatar)
-        .map((p) => p.avatar as string)
-    )
-    const available = AVATARS.filter((avatar) => !usedAvatares.has(avatar))
-    const randomAvatar =
-      available.length > 0 ? pickRandom(available) : pickRandom(AVATARS)
-
-    handleAvatarSelect(randomAvatar)
-  }
-
   const handleStart = () => {
-    const validPlayers: Player[] = localPlayers
-      .map((player) => ({
-        ...player,
-        name: player.name.trim(),
-      }))
-      .filter((player) => player.name.length > 0)
-
-    if (validPlayers.length < MIN_PLAYERS) {
+    if (players.length < MIN_PLAYERS) {
       toast.error(`Necesitas al menos ${MIN_PLAYERS} jugadores`)
-      setShowError(true)
       return
     }
 
-    setShowError(false)
-    setPlayers(validPlayers)
     const error = createGame()
     if (error) {
       toast.error(error)
     }
   }
 
-  const selectedPlayer = localPlayers.find((p) => p.id === selectedPlayerId)
+  const handleImpostorsChange = (delta: number) => {
+    const newCount = Math.max(1, Math.min(2, settings.impostorsCount + delta))
+    setSettings({ impostorsCount: newCount })
+  }
+
+  const handleHintModeChange = (value: string) => {
+    setSettings({ hintMode: value as "none" | "easy_similar" | "hard_category" })
+  }
+
+  const roundMinutes = Math.floor(settings.roundSeconds / 60)
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <div className="flex justify-center mb-4">
-          <Image
-            src="/impostor.png"
-            alt="Detective"
-            width={120}
-            height={120}
-            className="h-auto w-[96px] sm:w-[120px]"
-            priority={false}
-          />
-        </div>
-        <CardTitle>Configurar partida</CardTitle>
-        <CardDescription>
-          Agrega entre {MIN_PLAYERS} y {MAX_PLAYERS} jugadores
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
-          {localPlayers.map((player, index) => (
-            <div key={player.id} className="flex gap-2">
-              <Input
-                placeholder={`Jugador ${index + 1}`}
-                value={player.name}
-                onChange={(e) => handlePlayerNameChange(index, e.target.value)}
-                className="flex-1"
-              />
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => handleAvatarClick(player.id)}
-                className="shrink-0"
-              >
-                {player.avatar ? (
-                  <Image
-                    src={player.avatar}
-                    alt="Avatar"
-                    width={32}
-                    height={32}
-                    className="rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-xs">Elegir</span>
-                )}
-              </Button>
-              {localPlayers.length > MIN_PLAYERS && (
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => removePlayer(index)}
-                >
-                  ×
-                </Button>
-              )}
+    <div className="flex min-h-screen flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="w-10" /> {/* Spacer */}
+        <h1 className="text-xl font-semibold text-zinc-50">Configuración</h1>
+        <div className="w-10" /> {/* Spacer */}
+      </div>
+
+      {/* Menu Items */}
+      <div className="space-y-3 pb-28">
+        {/* Modo de Juego */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎮</span>
+            <div>
+              <div className="text-sm font-medium text-zinc-50">Modo de Juego</div>
+              <div className="text-xs text-muted-foreground">Clásico</div>
             </div>
-          ))}
+          </div>
         </div>
 
-        {localPlayers.length < MAX_PLAYERS && (
-          <Button variant="outline" onClick={addPlayer} className="w-full">
-            + Agregar jugador
-          </Button>
-        )}
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Categoría</label>
-          <select
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
-            value={settings.categoryId}
-            onChange={(e) => setSettings({ categoryId: e.target.value })}
-          >
-            {GAME_CATEGORIES.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Modo de pista</label>
-          <select
-            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none"
-            value={settings.hintMode}
-            onChange={(e) =>
-              setSettings({
-                hintMode: e.target.value as "none" | "easy_similar" | "hard_category",
-              })
-            }
-          >
-            <option value="none">Sin pistas</option>
-            <option value="easy_similar">Pista fácil (palabra similar)</option>
-            <option value="hard_category">Pista difícil (solo categoría)</option>
-          </select>
-        </div>
-
-        {showError && (
-          <p className="text-sm text-destructive">
-            Necesitas al menos {MIN_PLAYERS} jugadores
-          </p>
-        )}
-
-        <Button 
-          onClick={handleStart} 
-          className="w-full shadow-lg active:scale-[0.98] transition-all duration-200" 
-          size="lg"
-        >
-          Empezar
-        </Button>
-      </CardContent>
-
-      <Dialog open={avatarDialogOpen} onOpenChange={setAvatarDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Elegí un avatar</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              {AVATARS.map((avatarSrc) => (
-                <button
-                  key={avatarSrc}
-                  onClick={() => handleAvatarSelect(avatarSrc)}
-                  className={cn(
-                    "relative aspect-square rounded-lg overflow-hidden border-2 transition-all",
-                    selectedPlayer?.avatar === avatarSrc
-                      ? "border-primary ring-2 ring-primary/20"
-                      : "border-border hover:border-primary/50"
-                  )}
-                >
-                  <Image
-                    src={avatarSrc}
-                    alt="Avatar"
-                    fill
-                    className="object-cover"
-                  />
-                </button>
-              ))}
+        {/* Jugadores */}
+        <Link href="/game/players">
+          <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center cursor-pointer hover:bg-white/[0.07] transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">👥</span>
+              <div>
+                <div className="text-sm font-medium text-zinc-50">Jugadores</div>
+                <div className="text-xs text-muted-foreground">
+                  {players.length} {players.length === 1 ? "jugador" : "jugadores"}
+                </div>
+              </div>
             </div>
+            <span className="text-muted-foreground">›</span>
+          </div>
+        </Link>
+
+        {/* Impostores */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🕵️</span>
+            <div>
+              <div className="text-sm font-medium text-zinc-50">Impostores</div>
+              <div className="text-xs text-muted-foreground">
+                {settings.impostorsCount} {settings.impostorsCount === 1 ? "impostor" : "impostores"}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <Button
-              variant="outline"
-              onClick={handleRandomAvatar}
-              className="w-full"
+              variant="ghost"
+              size="icon"
+              onClick={() => handleImpostorsChange(-1)}
+              disabled={settings.impostorsCount <= 1}
+              className="h-8 w-8"
             >
-              Random
+              −
+            </Button>
+            <span className="text-sm font-medium w-6 text-center">{settings.impostorsCount}</span>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleImpostorsChange(1)}
+              disabled={settings.impostorsCount >= 2}
+              className="h-8 w-8"
+            >
+              +
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-    </Card>
+        </div>
+
+        {/* Pista para impostores */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-2xl">💡</span>
+            <div className="text-sm font-medium text-zinc-50">Pista para impostores</div>
+          </div>
+          <RadioGroup
+            value={settings.hintMode}
+            onValueChange={handleHintModeChange}
+            className="space-y-2"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="none" id="hint-none" />
+              <label
+                htmlFor="hint-none"
+                className="text-sm text-zinc-50 cursor-pointer flex-1"
+              >
+                Sin pistas
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="easy_similar" id="hint-easy" />
+              <label
+                htmlFor="hint-easy"
+                className="text-sm text-zinc-50 cursor-pointer flex-1"
+              >
+                Pista fácil: palabra similar
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="hard_category" id="hint-hard" />
+              <label
+                htmlFor="hint-hard"
+                className="text-sm text-zinc-50 cursor-pointer flex-1"
+              >
+                Pista difícil: solo categoría
+              </label>
+            </div>
+          </RadioGroup>
+        </div>
+
+        {/* Categorías */}
+        <Link href="/game/categories">
+          <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center cursor-pointer hover:bg-white/[0.07] transition-colors">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📚</span>
+              <div>
+                <div className="text-sm font-medium text-zinc-50">Categorías</div>
+                <div className="text-xs text-muted-foreground">
+                  {settings.categoryIds.length}{" "}
+                  {settings.categoryIds.length === 1 ? "categoría" : "categorías"} seleccionada
+                  {settings.categoryIds.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+            </div>
+            <span className="text-muted-foreground">›</span>
+          </div>
+        </Link>
+
+        {/* Duración */}
+        <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">⏱️</span>
+            <div>
+              <div className="text-sm font-medium text-zinc-50">Duración</div>
+              <div className="text-xs text-muted-foreground">{roundMinutes} minutos</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Fixed bottom button */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-black/40 backdrop-blur-xl border-t border-white/10 px-4 pt-4 pb-6">
+        <Button
+          onClick={handleStart}
+          variant="primaryGlow"
+          size="premium"
+          className="w-full"
+        >
+          Iniciar juego
+        </Button>
+      </div>
+    </div>
   )
 }
 
@@ -765,7 +709,8 @@ function VotePhase() {
 function ResultPhase() {
   const phase = useGameStore((state) => state.phase)
   const players = useGameStore((state) => state.players)
-  const reset = useGameStore((state) => state.reset)
+  const resetRound = useGameStore((state) => state.resetRound)
+  const resetAll = useGameStore((state) => state.resetAll)
 
   if (phase.type !== "result") return null
 
@@ -790,10 +735,10 @@ function ResultPhase() {
           <p className="text-xl font-bold">{phase.secretWord}</p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={reset} variant="outline" className="flex-1">
+          <Button onClick={resetAll} variant="outline" className="flex-1">
             Nueva partida
           </Button>
-          <Button onClick={reset} className="flex-1">
+          <Button onClick={resetRound} className="flex-1">
             Revancha
           </Button>
         </div>
@@ -806,7 +751,7 @@ export default function GamePage() {
   const phase = useGameStore((state) => state.phase)
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4 dark:bg-black">
+    <div className="flex min-h-screen items-center justify-center">
       <div className="w-full">
         {phase.type === "setup" && <SetupPhase />}
         {phase.type === "reveal" && <RevealPhase />}
