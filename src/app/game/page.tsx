@@ -124,6 +124,16 @@ function SetupPhase() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
+        <div className="flex justify-center mb-4">
+          <Image
+            src="/impostor.png"
+            alt="Detective"
+            width={120}
+            height={120}
+            className="h-auto w-[96px] sm:w-[120px]"
+            priority={false}
+          />
+        </div>
         <CardTitle>Configurar partida</CardTitle>
         <CardDescription>
           Agrega entre {MIN_PLAYERS} y {MAX_PLAYERS} jugadores
