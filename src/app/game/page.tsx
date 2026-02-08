@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { nanoid } from "nanoid"
 import { toast } from "sonner"
-import { motion, useMotionValue, animate } from "framer-motion"
+import { motion, useMotionValue, useTransform, animate } from "framer-motion"
 import { useGameStore } from "@/features/game/store/useGameStore"
 import { CATEGORIES } from "@/data/categories"
 import { MIN_PLAYERS, MAX_PLAYERS } from "@/lib/constants"
@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
 import type { Player } from "@/features/game/models/player"
 
 function SetupPhase() {
@@ -143,7 +144,11 @@ function SetupPhase() {
           </p>
         )}
 
-        <Button onClick={handleStart} className="w-full" size="lg">
+        <Button 
+          onClick={handleStart} 
+          className="w-full shadow-lg active:scale-[0.98] transition-all duration-200" 
+          size="lg"
+        >
           Empezar
         </Button>
       </CardContent>
@@ -164,14 +169,17 @@ function RevealPhase() {
   const revealNext = useGameStore((state) => state.revealNext)
 
   const [hasSeen, setHasSeen] = useState(false)
-  const [isPeeking, setIsPeeking] = useState(false)
   const coverY = useMotionValue(0)
   const peekTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Transforms para revelación progresiva
+  const revealOpacity = useTransform(coverY, [0, -80, -220], [0, 0.6, 1])
+  const revealScale = useTransform(coverY, [0, -220], [0.98, 1])
+  const frontOpacity = useTransform(coverY, [0, -220], [1, 0.92])
 
   useEffect(() => {
     // Reset states when player changes
     setHasSeen(false)
-    setIsPeeking(false)
     coverY.set(0)
     
     // Cleanup timeout
@@ -189,7 +197,11 @@ function RevealPhase() {
 
   if (phase.type !== "reveal") return null
 
-  const currentPlayer = players.find((p) => p.id === phase.currentPlayerId)
+  // Memoize current player lookup
+  const currentPlayer = useMemo(
+    () => players.find((p) => p.id === phase.currentPlayerId),
+    [players, phase.currentPlayerId]
+  )
   const isImpostor = currentPlayer?.id === impostorId
   const remainingCount = phase.remainingPlayerIds.length
 
@@ -207,20 +219,18 @@ function RevealPhase() {
     const springConfig = { type: "spring" as const, stiffness: 250, damping: 25 }
     
     if (info.offset.y <= -120) {
-      // Superó el threshold: mostrar contenido y marcar como visto
+      // Superó el threshold: marcar como visto y animar completamente arriba
       setHasSeen(true)
-      setIsPeeking(true)
       
       // Limpiar timeout anterior si existe
       if (peekTimeoutRef.current) {
         clearTimeout(peekTimeoutRef.current)
       }
       
-      // Animar la cortina hacia arriba para revelar
+      // Animar la cortina completamente hacia arriba para revelar
       animate(coverY, -220, springConfig).then(() => {
         // Ocultar automáticamente después de 500ms
         peekTimeoutRef.current = setTimeout(() => {
-          setIsPeeking(false)
           // Animar la cortina de vuelta para tapar
           animate(coverY, 0, springConfig)
           peekTimeoutRef.current = null
@@ -228,7 +238,6 @@ function RevealPhase() {
       })
     } else {
       // No superó el threshold: animar de vuelta a posición inicial
-      setIsPeeking(false)
       animate(coverY, 0, springConfig)
     }
   }
@@ -241,92 +250,126 @@ function RevealPhase() {
     }
     
     setHasSeen(false)
-    setIsPeeking(false)
     coverY.set(0)
     revealNext()
   }
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Turno de {currentPlayer?.name}</CardTitle>
-        <CardDescription>
-          {remainingCount > 0
-            ? `Quedan ${remainingCount} jugador${remainingCount > 1 ? "es" : ""} por ver`
-            : "Último jugador"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="w-full max-w-md relative overflow-hidden rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl shadow-xl p-6 transition-colors hover:border-primary/40">
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-2xl font-semibold">Turno de {currentPlayer?.name}</h2>
+          <p className="text-sm text-muted-foreground">
+            {remainingCount > 0
+              ? `Quedan ${remainingCount} jugador${remainingCount > 1 ? "es" : ""} por ver`
+              : "Último jugador"}
+          </p>
+        </div>
         {/* Card fija con overflow-hidden y altura fija */}
-        <div className="relative h-[360px] overflow-hidden rounded-lg border bg-card">
-          {/* Back layer: contenido revelado */}
-          {isPeeking && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-              <div className="mb-4">
-                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-3xl">
-                  {currentPlayer?.name ? getAvatarEmoji(currentPlayer.name) : "👤"}
-                </div>
-                <p className="text-lg font-semibold">{currentPlayer?.name}</p>
+        <div className="relative h-[360px] overflow-hidden rounded-lg border bg-card/50 backdrop-blur-md">
+          {/* Overlay con glow radial según rol */}
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-0 opacity-100",
+              isImpostor
+                ? "bg-[radial-gradient(circle_at_top,_hsl(var(--impostor)/0.22),_transparent_60%)]"
+                : "bg-[radial-gradient(circle_at_top,_hsl(var(--crew)/0.20),_transparent_60%)]"
+            )}
+          />
+          {/* Back layer: contenido revelado - siempre renderizado con revelación progresiva */}
+          <motion.div
+            className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center pointer-events-none"
+            style={{ opacity: revealOpacity, scale: revealScale }}
+          >
+            <div className="mb-4">
+              <div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 text-4xl shadow-[inset_0_2px_8px_rgba(0,0,0,0.3)]">
+                {currentPlayer?.name ? getAvatarEmoji(currentPlayer.name) : "👤"}
               </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Tu rol:</p>
-                  <p className="text-2xl font-bold">
-                    {isImpostor ? "🕵️ Impostor" : "👤 Tripulante"}
-                  </p>
+              <p className="text-lg font-semibold">{currentPlayer?.name}</p>
+            </div>
+            <div className="space-y-4">
+              {/* Badge de rol con micro-animación */}
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div
+                  className={cn(
+                    "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold tracking-wide border",
+                    isImpostor
+                      ? "border-[hsl(var(--impostor)/0.45)] bg-[hsl(var(--impostor)/0.12)] text-[hsl(var(--impostor))]"
+                      : "border-[hsl(var(--crew)/0.45)] bg-[hsl(var(--crew)/0.12)] text-[hsl(var(--crew))]"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "h-2 w-2 rounded-full animate-pulse",
+                      isImpostor
+                        ? "bg-[hsl(var(--impostor))]"
+                        : "bg-[hsl(var(--crew))]"
+                    )}
+                  />
+                  <span>{isImpostor ? "IMPOSTOR" : "TRIPULANTE"}</span>
                 </div>
-                {isImpostor ? (
-                  <div className="space-y-3">
-                    <p className="text-lg font-semibold">SOS EL IMPOSTOR</p>
-                    {settings.hintMode === "easy_similar" && impostorHintWord && (
+              </div>
+              <div>
+                <p
+                  className={cn(
+                    "text-5xl font-black uppercase tracking-wider mb-4 drop-shadow-lg",
+                    isImpostor
+                      ? "text-[hsl(var(--impostor))]"
+                      : "text-[hsl(var(--crew))]"
+                  )}
+                >
+                  {isImpostor ? "IMPOSTOR" : "TRIPULANTE"}
+                </p>
+              </div>
+              {isImpostor ? (
+                <div className="space-y-3">
+                  <p className="text-lg font-semibold">SOS EL IMPOSTOR</p>
+                  {settings.hintMode === "easy_similar" && impostorHintWord && (
+                    <div className="mt-3 rounded-lg bg-muted/50 p-3">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Tu pista:
+                      </p>
+                      <p className="text-xl font-semibold">{impostorHintWord}</p>
+                    </div>
+                  )}
+                  {settings.hintMode === "hard_category" &&
+                    impostorHintCategoryName && (
                       <div className="mt-3 rounded-lg bg-muted/50 p-3">
                         <p className="text-sm text-muted-foreground mb-1">
-                          Tu pista:
+                          Categoría:
                         </p>
-                        <p className="text-xl font-semibold">{impostorHintWord}</p>
+                        <p className="text-xl font-semibold">
+                          {impostorHintCategoryName}
+                        </p>
                       </div>
                     )}
-                    {settings.hintMode === "hard_category" &&
-                      impostorHintCategoryName && (
-                        <div className="mt-3 rounded-lg bg-muted/50 p-3">
-                          <p className="text-sm text-muted-foreground mb-1">
-                            Categoría:
-                          </p>
-                          <p className="text-xl font-semibold">
-                            {impostorHintCategoryName}
-                          </p>
-                        </div>
-                      )}
+                </div>
+              ) : (
+                secretWord && (
+                  <div className="mt-4 rounded-lg bg-muted/50 p-3">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      La palabra secreta es:
+                    </p>
+                    <p className="text-xl font-semibold">{secretWord}</p>
                   </div>
-                ) : (
-                  secretWord && (
-                    <div className="mt-4 rounded-lg bg-muted/50 p-3">
-                      <p className="text-sm text-muted-foreground mb-2">
-                        La palabra secreta es:
-                      </p>
-                      <p className="text-xl font-semibold">{secretWord}</p>
-                    </div>
-                  )
-                )}
-              </div>
+                )
+              )}
             </div>
-          )}
+          </motion.div>
 
           {/* Front layer: cortina que se desliza */}
           <motion.div
-            drag={isPeeking ? false : "y"}
+            drag="y"
             dragConstraints={{ top: -220, bottom: 0 }}
             dragElastic={0.2}
             dragMomentum={false}
             dragDirectionLock
             onDragEnd={handleDragEnd}
-            style={{ y: coverY }}
-            className={`absolute inset-0 flex flex-col items-center justify-center bg-card p-8 text-center ${
-              isPeeking ? "" : "cursor-grab active:cursor-grabbing"
-            }`}
+            style={{ y: coverY, opacity: frontOpacity }}
+            className="absolute inset-0 flex flex-col items-center justify-center bg-card p-8 text-center cursor-grab active:cursor-grabbing"
           >
             <div className="mb-6">
-              <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-4xl">
+              <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-gradient-to-br from-primary/30 via-primary/20 to-primary/10 text-5xl shadow-[inset_0_2px_8px_rgba(0,0,0,0.3)]">
                 {currentPlayer?.name ? getAvatarEmoji(currentPlayer.name) : "👤"}
               </div>
               <p className="text-xl font-bold">{currentPlayer?.name}</p>
@@ -343,7 +386,12 @@ function RevealPhase() {
                     repeat: Infinity,
                     ease: "easeInOut",
                   }}
-                  className="text-2xl"
+                  className={cn(
+                    "text-2xl",
+                    isImpostor
+                      ? "text-[hsl(var(--impostor))]"
+                      : "text-[hsl(var(--crew))]"
+                  )}
                 >
                   ↑
                 </motion.div>
@@ -354,12 +402,21 @@ function RevealPhase() {
 
         {/* Botón fuera de la card */}
         {hasSeen && (
-          <Button onClick={handleNextPlayer} className="w-full" size="lg">
+          <Button 
+            onClick={handleNextPlayer} 
+            variant="default"
+            className={cn(
+              "w-full h-12 rounded-xl font-semibold transition-all active:scale-[0.98]",
+              isImpostor
+                ? "shadow-[0_0_0_1px_hsl(var(--impostor)/0.45),0_12px_40px_-18px_hsl(var(--impostor)/0.55)]"
+                : "shadow-[0_0_0_1px_hsl(var(--crew)/0.45),0_12px_40px_-18px_hsl(var(--crew)/0.55)]"
+            )}
+          >
             Jugador siguiente
           </Button>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }
 
@@ -540,7 +597,7 @@ function VotePhase() {
           </Button>
           <Button
             onClick={confirmVote}
-            className="flex-1"
+            className="flex-1 shadow-lg active:scale-[0.98] transition-all duration-200"
             size="lg"
           >
             Confirmar voto
