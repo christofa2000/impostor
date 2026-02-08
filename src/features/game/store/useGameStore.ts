@@ -85,7 +85,18 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
     try {
       const currentSettings = get().settings
-      const mergedSettings = { ...currentSettings, ...partial }
+      
+      // Sanitize roundSeconds if present
+      let sanitizedPartial = { ...partial }
+      if (partial.roundSeconds !== undefined) {
+        // Round to nearest multiple of 60
+        const rounded = Math.round(partial.roundSeconds / 60) * 60
+        // Clamp to valid range (60-420)
+        const clamped = Math.max(60, Math.min(420, rounded))
+        sanitizedPartial = { ...sanitizedPartial, roundSeconds: clamped }
+      }
+      
+      const mergedSettings = { ...currentSettings, ...sanitizedPartial }
       const validatedSettings = GameSettingsSchema.parse(mergedSettings)
       set({ settings: validatedSettings })
     } catch (error) {
@@ -127,13 +138,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const clampedMinutes = Math.max(1, Math.min(7, Math.round(minutes)))
     const roundSeconds = clampedMinutes * 60
 
-    try {
-      const updatedSettings = { ...state.settings, roundSeconds }
-      const validatedSettings = GameSettingsSchema.parse(updatedSettings)
-      set({ settings: validatedSettings })
-    } catch (error) {
-      console.error("Invalid roundSeconds:", error)
-    }
+    // Use setSettings which will sanitize roundSeconds automatically
+    state.setSettings({ roundSeconds })
   },
 
   toggleCategory: (categoryId: CategoryId) => {
