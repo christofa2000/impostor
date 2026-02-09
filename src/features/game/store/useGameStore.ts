@@ -50,8 +50,6 @@ interface GameActions {
   isCategorySelected: (categoryId: CategoryId) => boolean
   createGame: () => string | null
   revealNext: () => void
-  nextTurn: () => void
-  startVote: () => void
   selectVote: (targetPlayerId: string | null) => void
   confirmVote: () => void
   /** If guess matches secretWord (case-insensitive, trim), ends round and impostor wins. */
@@ -123,7 +121,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       let sanitizedPartial = { ...partial }
       if (partial.roundSeconds !== undefined) {
         const rounded = Math.round(partial.roundSeconds / 60) * 60
-        const clamped = Math.max(60, Math.min(420, rounded))
+        const clamped = Math.max(60, Math.min(360, rounded))
         sanitizedPartial = { ...sanitizedPartial, roundSeconds: clamped }
       }
       if (partial.winningScore !== undefined) {
@@ -170,7 +168,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       return
     }
 
-    const clampedMinutes = Math.max(1, Math.min(7, Math.round(minutes)))
+    const clampedMinutes = Math.max(1, Math.min(6, Math.round(minutes)))
     const roundSeconds = clampedMinutes * 60
 
     // Use setSettings which will sanitize roundSeconds automatically
@@ -363,24 +361,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const { remainingPlayerIds } = state.phase
 
     if (remainingPlayerIds.length === 0) {
-      const { settings, players } = state
-      if (players.length === 0) {
-        return
-      }
-
-      const now = Date.now()
-      const roundEndsAt = now + settings.roundSeconds * 1000
-      // Initialize first turn deterministically with first player
-      const firstTurnPlayerId = players[0]?.id ?? ""
-      const turnEndsAt = now + settings.turnSeconds * 1000
-
       set({
         phase: {
-          type: "play",
-          startedAt: now,
-          roundEndsAt,
-          turnPlayerId: firstTurnPlayerId,
-          turnEndsAt,
+          type: "vote",
+          selectedPlayerId: null,
         },
       })
     } else {
@@ -393,63 +377,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         },
       })
     }
-  },
-
-  nextTurn: () => {
-    const state = get()
-    if (state.phase.type !== "play") {
-      return
-    }
-
-    const { players, settings } = state
-    if (players.length === 0) {
-      return
-    }
-
-    const playerIds = players.map((p) => p.id)
-    const currentTurnPlayerId = state.phase.turnPlayerId
-
-    // Get next player ID in circular rotation
-    let nextTurnPlayerId: string
-    if (currentTurnPlayerId === undefined) {
-      // No current turn, start with first player
-      nextTurnPlayerId = playerIds[0] ?? ""
-    } else {
-      const currentIndex = playerIds.indexOf(currentTurnPlayerId)
-      if (currentIndex === -1) {
-        // Current player not found, start with first
-        nextTurnPlayerId = playerIds[0] ?? ""
-      } else {
-        // Circular rotation: next index, wrapping around
-        const nextIndex = (currentIndex + 1) % playerIds.length
-        nextTurnPlayerId = playerIds[nextIndex] ?? ""
-      }
-    }
-
-    const now = Date.now()
-    const turnEndsAt = now + settings.turnSeconds * 1000
-
-    set({
-      phase: {
-        ...state.phase,
-        turnPlayerId: nextTurnPlayerId,
-        turnEndsAt,
-      },
-    })
-  },
-
-  startVote: () => {
-    const state = get()
-    if (state.phase.type !== "play") {
-      return
-    }
-
-    set({
-      phase: {
-        type: "vote",
-        selectedPlayerId: null,
-      },
-    })
   },
 
   selectVote: (targetPlayerId: string | null) => {
@@ -533,7 +460,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   impostorGuessWord: (guess: string) => {
     const state = get()
-    if (state.phase.type !== "play") {
+    if (state.phase.type !== "vote") {
       return false
     }
 
@@ -550,7 +477,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
     const lastRoundResult: LastRoundResult = {
       winner: "impostor",
-      reason: "not_voted",
+      reason: "guessed_word",
       impostorId,
       secretWord,
       votedPlayerId: null,

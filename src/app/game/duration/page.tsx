@@ -45,7 +45,7 @@ export default function DurationPage() {
               </label>
 
               <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
-                {[1, 2, 3, 4, 5, 6, 7].map((minutes) => {
+                {[1, 2, 3, 4, 5, 6].map((minutes) => {
                   const isSelected = currentMinutes === minutes
 
                   return (

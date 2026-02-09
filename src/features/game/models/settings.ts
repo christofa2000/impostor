@@ -6,7 +6,7 @@ export const GameSettingsSchema = z.object({
     .number()
     .int()
     .min(60)
-    .max(420)
+    .max(360)
     .refine((val) => val % 60 === 0, {
       message: "roundSeconds must be a multiple of 60 (representing whole minutes)",
     }),

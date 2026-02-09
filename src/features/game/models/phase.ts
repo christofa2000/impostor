@@ -6,13 +6,6 @@ export type GamePhase =
       remainingPlayerIds: string[]
     }
   | {
-      type: "play"
-      startedAt: number
-      roundEndsAt: number
-      turnPlayerId?: string
-      turnEndsAt?: number
-    }
-  | {
       type: "vote"
       selectedPlayerId: string | null
     }

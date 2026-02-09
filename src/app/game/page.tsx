@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import type { GameSettings } from "@/features/game/models/settings";
 import { useGameStore } from "@/features/game/store/useGameStore";
 import { MIN_PLAYERS } from "@/lib/constants";
@@ -588,188 +589,106 @@ function RevealPhase() {
   );
 }
 
-function PlayPhase() {
-  const phase = useGameStore((state) => state.phase);
-  const players = useGameStore((state) => state.players);
-  const startVote = useGameStore((state) => state.startVote);
-  const nextTurn = useGameStore((state) => state.nextTurn);
-
-  const [roundTimeRemaining, setRoundTimeRemaining] = useState(0);
-  const [turnTimeRemaining, setTurnTimeRemaining] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    if (phase.type !== "play") {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
-    }
-
-    let hasTriggeredTurnAdvance = false;
-    let hasTriggeredRoundEnd = false;
-    const initialTurnEndsAt = phase.turnEndsAt;
-    const initialRoundEndsAt = phase.roundEndsAt;
-
-    const updateTimers = () => {
-      const now = Date.now();
-      const roundRemaining = Math.max(
-        0,
-        Math.floor((phase.roundEndsAt - now) / 1000),
-      );
-      setRoundTimeRemaining(roundRemaining);
-
-      if (phase.turnEndsAt) {
-        const turnRemaining = Math.max(
-          0,
-          Math.floor((phase.turnEndsAt - now) / 1000),
-        );
-        setTurnTimeRemaining(turnRemaining);
-
-        if (
-          turnRemaining === 0 &&
-          !hasTriggeredTurnAdvance &&
-          phase.turnEndsAt === initialTurnEndsAt
-        ) {
-          hasTriggeredTurnAdvance = true;
-          if (typeof navigator !== "undefined" && navigator.vibrate)
-            navigator.vibrate(200);
-          nextTurn();
-        }
-      } else {
-        setTurnTimeRemaining(0);
-      }
-
-      if (
-        roundRemaining === 0 &&
-        !hasTriggeredRoundEnd &&
-        phase.roundEndsAt === initialRoundEndsAt
-      ) {
-        hasTriggeredRoundEnd = true;
-        startVote();
-      }
-    };
-
-    updateTimers();
-    intervalRef.current = setInterval(updateTimers, 1000);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [
-    phase.type === "play" ? phase.roundEndsAt : null,
-    phase.type === "play" ? phase.turnEndsAt : null,
-    phase.type === "play" ? phase.turnPlayerId : null,
-    nextTurn,
-    startVote,
-  ]);
-
-  if (phase.type !== "play") return null;
-
-  const currentTurnPlayer = players.find((p) => p.id === phase.turnPlayerId);
-  const roundMinutes = Math.floor(roundTimeRemaining / 60);
-  const roundSeconds = roundTimeRemaining % 60;
-  const turnMinutes = Math.floor(turnTimeRemaining / 60);
-  const turnSeconds = turnTimeRemaining % 60;
-
-  return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Jugando</CardTitle>
-        <CardDescription>Discutan y descubran al impostor</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {currentTurnPlayer && (
-          <div className="rounded-lg border p-4 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Turno de:</p>
-            <p className="text-xl font-bold">{currentTurnPlayer.name}</p>
-          </div>
-        )}
-
-        <div className="space-y-3">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">
-              Tiempo del turno
-            </p>
-            <p className="text-3xl font-bold">
-              {String(turnMinutes).padStart(2, "0")}:
-              {String(turnSeconds).padStart(2, "0")}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">
-              Tiempo de ronda
-            </p>
-            <p className="text-2xl font-semibold">
-              {String(roundMinutes).padStart(2, "0")}:
-              {String(roundSeconds).padStart(2, "0")}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Button onClick={nextTurn} variant="outline" className="flex-1">
-            Siguiente turno
-          </Button>
-          <Button onClick={startVote} className="flex-1" size="lg">
-            Ir a votar
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 function VotePhase() {
   const phase = useGameStore((state) => state.phase);
   const players = useGameStore((state) => state.players);
   const selectVote = useGameStore((state) => state.selectVote);
   const confirmVote = useGameStore((state) => state.confirmVote);
+  const impostorGuessWord = useGameStore((state) => state.impostorGuessWord);
+  const [guessDialogOpen, setGuessDialogOpen] = useState(false);
+  const [guessInput, setGuessInput] = useState("");
 
   if (phase.type !== "vote") return null;
 
+  const handleGuessConfirm = () => {
+    const guess = guessInput.trim();
+    if (!guess) return;
+    const ok = impostorGuessWord(guess);
+    if (ok) {
+      setGuessDialogOpen(false);
+      setGuessInput("");
+    } else {
+      toast.error("Incorrecto");
+    }
+  };
+
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>Votación</CardTitle>
+    <>
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Votación</CardTitle>
         <CardDescription>
-          Elijan entre todos quién es el impostor
+          Discutan y voten quién es el impostor
         </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          {players.map((player) => (
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            {players.map((player) => (
+              <Button
+                key={player.id}
+                variant={
+                  phase.selectedPlayerId === player.id ? "default" : "outline"
+                }
+                className="w-full justify-start"
+                onClick={() => selectVote(player.id)}
+              >
+                {player.name}
+              </Button>
+            ))}
+          </div>
+          <div className="flex gap-2">
             <Button
-              key={player.id}
-              variant={
-                phase.selectedPlayerId === player.id ? "default" : "outline"
-              }
-              className="w-full justify-start"
-              onClick={() => selectVote(player.id)}
+              onClick={() => setGuessDialogOpen(true)}
+              variant="outline"
+              className="flex-1"
             >
-              {player.name}
+              Adivinar palabra
             </Button>
-          ))}
-        </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => selectVote(null)}
-            variant="outline"
-            className="flex-1"
-          >
-            Skip
-          </Button>
-          <Button
-            onClick={confirmVote}
-            className="flex-1 shadow-lg active:scale-[0.98] transition-all duration-200"
-            size="lg"
-          >
-            Confirmar voto
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+            <Button
+              onClick={confirmVote}
+              className="flex-1 shadow-lg active:scale-[0.98] transition-all duration-200"
+              size="lg"
+            >
+              Confirmar voto
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Dialog
+        open={guessDialogOpen}
+        onOpenChange={(open) => {
+          setGuessDialogOpen(open);
+          if (!open) setGuessInput("");
+        }}
+      >
+        <DialogContent className="max-w-md border-white/10 bg-zinc-900/95">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-50">Adivinar palabra</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <Input
+              value={guessInput}
+              onChange={(e) => setGuessInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleGuessConfirm();
+              }}
+              placeholder="Escribí la palabra"
+              className="bg-white/5 border-white/10 text-zinc-50 placeholder:text-zinc-500"
+              autoFocus
+              aria-label="Palabra a adivinar"
+            />
+            <Button
+              onClick={handleGuessConfirm}
+              disabled={!guessInput.trim()}
+              className="w-full"
+            >
+              Confirmar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -949,7 +868,6 @@ export default function GamePage() {
     <div className="w-full">
       {phase.type === "setup" && <SetupPhase />}
       {phase.type === "reveal" && <RevealPhase />}
-      {phase.type === "play" && <PlayPhase />}
       {phase.type === "vote" && <VotePhase />}
       {phase.type === "result" && <ResultPhase />}
       {phase.type === "score" && <ScorePhase />}

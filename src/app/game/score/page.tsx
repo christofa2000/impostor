@@ -27,6 +27,8 @@ function getReasonLabel(reason: RoundEndReason, impostorGuessedWord?: boolean): 
       return "Skip"
     case "not_voted":
       return "Sin voto"
+    case "guessed_word":
+      return "Impostor adivinó la palabra"
     default:
       return reason
   }
