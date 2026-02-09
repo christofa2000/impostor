@@ -22,3 +22,4 @@ export type GamePhase =
       impostorId: string
       secretWord: string
     }
+  | { type: "score" }

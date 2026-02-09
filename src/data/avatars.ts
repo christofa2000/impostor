@@ -10,7 +10,7 @@ export const AVATARS = [
   "/avatars/arik.webp",
   "/avatars/diego.webp",
   "/avatars/seba.webp",
-  "/avatars/av-12.webp",
+  "/avatars/leinad.webp",
 ] as const;
 
 export type AvatarSrc = (typeof AVATARS)[number];

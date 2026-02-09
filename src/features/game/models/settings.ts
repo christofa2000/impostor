@@ -14,6 +14,7 @@ export const GameSettingsSchema = z.object({
   impostorsCount: z.number().int().min(1).max(2),
   categoryIds: z.array(z.string().min(1) as z.ZodType<CategoryId>).min(1),
   hintMode: z.enum(["none", "easy_similar", "hard_category"]),
+  winningScore: z.number().int().min(1).max(100),
 })
 
 export type GameSettings = z.infer<typeof GameSettingsSchema>

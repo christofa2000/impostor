@@ -11,10 +11,12 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useGameStore } from "@/features/game/store/useGameStore";
 import { MIN_PLAYERS } from "@/lib/constants";
+import { PremiumCard } from "@/components/ui/premium-card";
 import { cn } from "@/lib/utils";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -708,6 +710,7 @@ function VotePhase() {
 }
 
 function ResultPhase() {
+  const router = useRouter();
   const phase = useGameStore((state) => state.phase);
   const players = useGameStore((state) => state.players);
   const resetRound = useGameStore((state) => state.resetRound);
@@ -737,16 +740,141 @@ function ResultPhase() {
           </p>
           <p className="text-xl font-bold">{phase.secretWord}</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={resetAll} variant="outline" className="flex-1">
-            Nueva partida
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="primaryGlow"
+            size="premium"
+            className="w-full"
+            onClick={() => router.push("/game/score")}
+          >
+            Continuar
           </Button>
-          <Button onClick={resetRound} className="flex-1">
-            Revancha
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={resetAll} variant="outline" className="flex-1">
+              Nueva partida
+            </Button>
+            <Button onClick={resetRound} className="flex-1">
+              Revancha
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ScorePhase() {
+  const router = useRouter();
+  const players = useGameStore((state) => state.players);
+  const lastRoundResult = useGameStore((state) => state.lastRoundResult);
+  const roundNumber = useGameStore((state) => state.roundNumber);
+  const nextRound = useGameStore((state) => state.nextRound);
+  const resetAll = useGameStore((state) => state.resetAll);
+
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const winnerLabel =
+    lastRoundResult?.winner === "crew"
+      ? "Tripulación"
+      : lastRoundResult?.winner === "impostor"
+        ? "Impostor"
+        : null;
+
+  const handleNextRound = () => {
+    const error = nextRound();
+    if (error) toast.error(error);
+  };
+
+  const handleFinishGame = () => {
+    resetAll();
+    router.push("/");
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-xl font-semibold text-zinc-50">Puntajes</h1>
+        {roundNumber > 0 && (
+          <span className="text-sm text-zinc-400">Ronda {roundNumber}</span>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col gap-6 pb-28">
+        {winnerLabel && (
+          <PremiumCard className="text-center">
+            <p className="text-sm text-zinc-400">Ganador de la ronda anterior</p>
+            <p
+              className={cn(
+                "text-2xl font-bold",
+                lastRoundResult?.winner === "crew"
+                  ? "text-emerald-400"
+                  : "text-amber-400"
+              )}
+            >
+              {lastRoundResult?.winner === "crew" ? "🎉 " : "🕵️ "}
+              {winnerLabel}
+            </p>
+          </PremiumCard>
+        )}
+
+        <PremiumCard>
+          <h2 className="mb-4 text-sm font-medium text-zinc-400">
+            Clasificación
+          </h2>
+          <ul className="space-y-3">
+            {sortedPlayers.map((player, index) => (
+              <li
+                key={player.id}
+                className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+              >
+                <span className="w-6 text-center text-sm font-semibold text-zinc-500">
+                  {index + 1}°
+                </span>
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-white/10 bg-white/10">
+                  {player.avatar ? (
+                    <Image
+                      src={player.avatar}
+                      alt={player.name}
+                      width={40}
+                      height={40}
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-lg font-bold text-zinc-400">
+                      {player.name.charAt(0).toUpperCase() || "?"}
+                    </span>
+                  )}
+                </div>
+                <span className="min-w-0 flex-1 truncate font-medium text-zinc-50">
+                  {player.name}
+                </span>
+                <span className="shrink-0 rounded-full bg-white/10 px-3 py-1 text-sm font-semibold tabular-nums text-zinc-50">
+                  {player.score}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </PremiumCard>
+
+        <div className="flex flex-col gap-3">
+          <Button
+            variant="primaryGlow"
+            size="premium"
+            onClick={handleNextRound}
+            className="w-full"
+          >
+            Siguiente ronda
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleFinishGame}
+            className="w-full rounded-full border-white/20 bg-white/5 hover:bg-white/10"
+          >
+            Finalizar partida
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -760,6 +888,7 @@ export default function GamePage() {
       {phase.type === "play" && <PlayPhase />}
       {phase.type === "vote" && <VotePhase />}
       {phase.type === "result" && <ResultPhase />}
+      {phase.type === "score" && <ScorePhase />}
     </div>
   );
 }

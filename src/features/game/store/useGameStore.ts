@@ -1,5 +1,10 @@
 import { create } from "zustand"
-import { DEFAULT_ROUND_SECONDS, DEFAULT_TURN_SECONDS, MIN_PLAYERS } from "@/lib/constants"
+import {
+  DEFAULT_ROUND_SECONDS,
+  DEFAULT_TURN_SECONDS,
+  DEFAULT_WINNING_SCORE,
+  MIN_PLAYERS,
+} from "@/lib/constants"
 import {
   GAME_CATEGORIES,
   getCategoryById,
@@ -7,12 +12,14 @@ import {
 } from "@/data/game-categories"
 import { WORDS_BY_CATEGORY, SIMILAR_PAIRS_BY_CATEGORY } from "@/data/words-by-category"
 import { AVATARS } from "@/data/avatars"
-import { PlayerSchema, type Player } from "../models/player"
+import { PlayerSchema, type Player, type PlayerInput } from "../models/player"
 import { GameSettingsSchema, type GameSettings } from "../models/settings"
 import type { GamePhase } from "../models/phase"
+import type { LastRoundResult } from "../models/last-round-result"
 import { pickRandom, shuffle } from "../logic/random"
 import { ensureUniquePlayerNames } from "../logic/game-helpers"
 import { assignMissingAvatars } from "../logic/avatars"
+import { applyRoundScores } from "../logic/score"
 
 interface GameState {
   phase: GamePhase
@@ -22,10 +29,18 @@ interface GameState {
   impostorId: string | null
   impostorHintWord: string | null
   impostorHintCategoryName: string | null
+  /** Current round number (1-based). */
+  roundNumber: number
+  /** Result of the last finished round (for scoring / summary). Null before first result. */
+  lastRoundResult: LastRoundResult | null
+  /** True when at least one player reached settings.winningScore. */
+  gameOver: boolean
+  /** Player ids that reached winningScore (winners; can be multiple on tie). */
+  winnerPlayerIds: string[]
 }
 
 interface GameActions {
-  setPlayers: (players: Player[]) => void
+  setPlayers: (players: PlayerInput[]) => void
   setSettings: (partial: Partial<GameSettings>) => void
   setPlayerAvatar: (playerId: string, avatar: string | null) => void
   setRoundMinutes: (minutes: number) => void
@@ -39,6 +54,16 @@ interface GameActions {
   startVote: () => void
   selectVote: (targetPlayerId: string | null) => void
   confirmVote: () => void
+  /** If guess matches secretWord (case-insensitive, trim), ends round and impostor wins. */
+  impostorGuessWord: (guess: string) => boolean
+  /** Transition from result to score phase (puntajes). */
+  goToScore: () => void
+  /** Next round: keeps players and scores, new impostor + word, phase = reveal. Call from result/score only. */
+  nextRound: () => string | null
+  /** Rematch: keeps players, resets scores to 0 and roundNumber to 1, starts new round (phase = reveal). */
+  rematch: () => string | null
+  /** New game: full reset (players, settings, scores, phase = setup). */
+  newGame: () => void
   resetRound: () => void
   resetAll: () => void
 }
@@ -49,6 +74,7 @@ const defaultSettings: GameSettings = {
   impostorsCount: 1,
   categoryIds: GAME_CATEGORIES[0] ? [GAME_CATEGORIES[0].id] : [],
   hintMode: "none",
+  winningScore: DEFAULT_WINNING_SCORE,
 }
 
 const initialState: GameState = {
@@ -59,18 +85,25 @@ const initialState: GameState = {
   impostorId: null,
   impostorHintWord: null,
   impostorHintCategoryName: null,
+  roundNumber: 1,
+  lastRoundResult: null,
+  gameOver: false,
+  winnerPlayerIds: [],
 }
 
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
   ...initialState,
 
-  setPlayers: (players: Player[]) => {
+  setPlayers: (players: PlayerInput[]) => {
     if (get().phase.type !== "setup") {
       return
     }
 
     try {
-      const validatedPlayers = players.map((player) => PlayerSchema.parse(player))
+      // PlayerSchema.parse() ensures score defaults to 0 when missing (PlayerInput)
+      const validatedPlayers: Player[] = players.map((player) =>
+        PlayerSchema.parse(player)
+      )
       const uniquePlayers = ensureUniquePlayerNames(validatedPlayers)
       set({ players: uniquePlayers })
     } catch (error) {
@@ -86,16 +119,18 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     try {
       const currentSettings = get().settings
       
-      // Sanitize roundSeconds if present
+      // Sanitize roundSeconds and winningScore if present
       let sanitizedPartial = { ...partial }
       if (partial.roundSeconds !== undefined) {
-        // Round to nearest multiple of 60
         const rounded = Math.round(partial.roundSeconds / 60) * 60
-        // Clamp to valid range (60-420)
         const clamped = Math.max(60, Math.min(420, rounded))
         sanitizedPartial = { ...sanitizedPartial, roundSeconds: clamped }
       }
-      
+      if (partial.winningScore !== undefined) {
+        const clamped = Math.max(1, Math.min(100, Math.round(partial.winningScore)))
+        sanitizedPartial = { ...sanitizedPartial, winningScore: clamped }
+      }
+
       const mergedSettings = { ...currentSettings, ...sanitizedPartial }
       const validatedSettings = GameSettingsSchema.parse(mergedSettings)
       set({ settings: validatedSettings })
@@ -214,8 +249,12 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
   createGame: () => {
     const state = get()
-    if (state.phase.type !== "setup") {
-      return "La partida ya está en curso"
+    const canStart =
+      state.phase.type === "setup" ||
+      state.phase.type === "result" ||
+      state.phase.type === "score"
+    if (!canStart) {
+      return "Solo puedes iniciar una partida desde la configuración, el resultado o la pantalla de puntajes"
     }
 
     const { players, settings } = state
@@ -292,6 +331,11 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const firstPlayerId = shuffledPlayerIds[0] ?? ""
     const remainingPlayerIds = shuffledPlayerIds.slice(1)
 
+    const nextRoundNumber =
+      state.phase.type === "result" || state.phase.type === "score"
+        ? state.roundNumber + 1
+        : 1
+
     set({
       phase: {
         type: "reveal",
@@ -302,6 +346,9 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       secretWord,
       impostorHintWord,
       impostorHintCategoryName,
+      roundNumber: nextRoundNumber,
+      gameOver: false,
+      winnerPlayerIds: [],
     })
 
     return null
@@ -440,21 +487,35 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       return
     }
 
-    // Determine winner based on vote:
-    // - If selectedPlayerId is null (skip/no vote) -> impostor wins (no one was expelled)
-    // - If selectedPlayerId === impostorId -> crew wins (impostor was correctly identified)
-    // - If selectedPlayerId !== impostorId -> impostor wins (wrong person was expelled)
-    let winner: "crew" | "impostor"
-    if (selectedPlayerId === null) {
-      // No vote / skip: impostor wins because no one was expelled
-      winner = "impostor"
-    } else if (selectedPlayerId === impostorId) {
-      // Correct vote: crew wins
-      winner = "crew"
-    } else {
-      // Wrong vote: impostor wins
-      winner = "impostor"
+    // reason: skip = no one voted, voted_out = someone was voted out
+    const reason: LastRoundResult["reason"] =
+      selectedPlayerId === null ? "skip" : "voted_out"
+
+    // Victory rules (by vote): impostor not chosen => impostor wins; chosen => crew wins
+    const chosenIsImpostor = selectedPlayerId === impostorId
+    const winner: "crew" | "impostor" = chosenIsImpostor ? "crew" : "impostor"
+
+    const lastRoundResult: LastRoundResult = {
+      winner,
+      reason,
+      impostorId,
+      secretWord,
+      votedPlayerId: selectedPlayerId,
+      impostorGuessedWord: false,
     }
+
+    const playersWithScores = applyRoundScores(state.players, winner, impostorId)
+    const winningScore = state.settings.winningScore
+    const maxScore = Math.max(
+      0,
+      ...playersWithScores.map((p) => p.score)
+    )
+    const isGameOver = maxScore >= winningScore
+    const winnerPlayerIds = isGameOver
+      ? playersWithScores
+          .filter((p) => p.score >= winningScore)
+          .map((p) => p.id)
+      : []
 
     set({
       phase: {
@@ -463,6 +524,119 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         impostorId,
         secretWord,
       },
+      lastRoundResult,
+      players: playersWithScores,
+      gameOver: isGameOver,
+      winnerPlayerIds,
+    })
+  },
+
+  impostorGuessWord: (guess: string) => {
+    const state = get()
+    if (state.phase.type !== "play") {
+      return false
+    }
+
+    const { secretWord, impostorId } = state
+    if (!secretWord || !impostorId) {
+      return false
+    }
+
+    const guessNorm = guess.trim().toLowerCase()
+    const secretNorm = secretWord.trim().toLowerCase()
+    if (guessNorm !== secretNorm) {
+      return false
+    }
+
+    const lastRoundResult: LastRoundResult = {
+      winner: "impostor",
+      reason: "not_voted",
+      impostorId,
+      secretWord,
+      votedPlayerId: null,
+      impostorGuessedWord: true,
+    }
+
+    const playersWithScores = applyRoundScores(state.players, "impostor", impostorId)
+    const winningScore = state.settings.winningScore
+    const maxScore = Math.max(
+      0,
+      ...playersWithScores.map((p) => p.score)
+    )
+    const isGameOver = maxScore >= winningScore
+    const winnerPlayerIds = isGameOver
+      ? playersWithScores
+          .filter((p) => p.score >= winningScore)
+          .map((p) => p.id)
+      : []
+
+    set({
+      phase: {
+        type: "result",
+        winner: "impostor",
+        impostorId,
+        secretWord,
+      },
+      lastRoundResult,
+      players: playersWithScores,
+      gameOver: isGameOver,
+      winnerPlayerIds,
+    })
+    return true
+  },
+
+  goToScore: () => {
+    const state = get()
+    if (state.phase.type !== "result") return
+    set({ phase: { type: "score" } })
+  },
+
+  nextRound: () => {
+    const state = get()
+    if (state.phase.type !== "result" && state.phase.type !== "score") {
+      return "Solo puedes iniciar la siguiente ronda desde el resultado o la pantalla de puntajes"
+    }
+    // Does NOT clear players nor scores; createGame() picks new impostor/word and sets phase = reveal
+    return get().createGame()
+  },
+
+  rematch: () => {
+    const state = get()
+    if (state.phase.type !== "result" && state.phase.type !== "score") {
+      return "Solo puedes hacer revancha desde el resultado o la pantalla de puntajes"
+    }
+    const playersWithZeroScore: Player[] = state.players.map((p) => ({
+      ...p,
+      score: 0,
+    }))
+    set({
+      phase: { type: "setup" },
+      players: playersWithZeroScore,
+      settings: state.settings,
+      secretWord: null,
+      impostorId: null,
+      impostorHintWord: null,
+      impostorHintCategoryName: null,
+      roundNumber: 1,
+      lastRoundResult: null,
+      gameOver: false,
+      winnerPlayerIds: [],
+    })
+    return get().createGame()
+  },
+
+  newGame: () => {
+    set({
+      ...initialState,
+      settings: defaultSettings,
+      secretWord: null,
+      impostorId: null,
+      impostorHintWord: null,
+      impostorHintCategoryName: null,
+      roundNumber: 1,
+      lastRoundResult: null,
+      gameOver: false,
+      winnerPlayerIds: [],
     })
   },
 
@@ -474,6 +648,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       impostorId: null,
       impostorHintWord: null,
       impostorHintCategoryName: null,
+      roundNumber: 1,
+      lastRoundResult: null,
+      gameOver: false,
+      winnerPlayerIds: [],
       // Preserve players and settings
       players: state.players,
       settings: state.settings,
@@ -488,6 +666,10 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       impostorId: null,
       impostorHintWord: null,
       impostorHintCategoryName: null,
+      roundNumber: 1,
+      lastRoundResult: null,
+      gameOver: false,
+      winnerPlayerIds: [],
     })
   },
 }))

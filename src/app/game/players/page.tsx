@@ -30,9 +30,9 @@ export default function PlayersPage() {
     storePlayers.length > 0
       ? storePlayers
       : [
-          { id: nanoid(), name: "" },
-          { id: nanoid(), name: "" },
-          { id: nanoid(), name: "" },
+          { id: nanoid(), name: "", score: 0 },
+          { id: nanoid(), name: "", score: 0 },
+          { id: nanoid(), name: "", score: 0 },
         ]
   )
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
@@ -46,7 +46,7 @@ export default function PlayersPage() {
 
   const addPlayer = () => {
     if (localPlayers.length < MAX_PLAYERS) {
-      setLocalPlayers([...localPlayers, { id: nanoid(), name: "" }])
+      setLocalPlayers([...localPlayers, { id: nanoid(), name: "", score: 0 }])
     }
   }
 

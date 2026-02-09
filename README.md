@@ -22,21 +22,27 @@ Juego de deducción social estilo Among Us para jugar con amigos. Pasa el teléf
   - Sin pistas: El impostor no recibe ayuda
   - Pista fácil: El impostor recibe una palabra similar
   - Pista difícil: El impostor solo recibe el nombre de la categoría
-- ⏱️ **Sistema de turnos**: Con timers individuales y de ronda
+- 📚 **8 categorías temáticas**: Comida, Películas, Objetos, Selección Argentina, Tecnología, Lugares, Anime, Cosas argentinas
+- 🎭 **Selección múltiple de categorías**: Puedes activar varias categorías para mayor variedad
+- 👤 **Sistema de avatares**: 13 avatares únicos para personalizar jugadores
+- ⏱️ **Sistema de turnos**: Con timers individuales y de ronda configurable
 - 🗳️ **Votación grupal**: Todos votan juntos en una sola decisión
 - 🎨 **UI moderna**: Interfaz limpia con shadcn/ui y Tailwind CSS
 - 🔒 **Anti-spoiler**: Sistema de "mantener presionado" para revelar información
+- 🎨 **Diseño premium**: Cards con efecto glass y animaciones suaves
 
 ## 🛠️ Tecnologías
 
-- **Framework**: Next.js 16 (App Router)
-- **Lenguaje**: TypeScript (strict mode)
-- **Estilos**: Tailwind CSS
-- **UI Components**: shadcn/ui (Radix UI primitives)
-- **State Management**: Zustand
-- **Validación**: Zod
-- **Animaciones**: Framer Motion
-- **Notificaciones**: Sonner (toast)
+- **Framework**: Next.js 16.1.6 (App Router)
+- **Lenguaje**: TypeScript 5 (strict mode)
+- **React**: 19.2.3
+- **Estilos**: Tailwind CSS 4
+- **UI Components**: shadcn/ui 3.8.4 (Radix UI primitives)
+- **State Management**: Zustand 5.0.11
+- **Validación**: Zod 4.3.6
+- **Animaciones**: Framer Motion 12.33.0
+- **Notificaciones**: Sonner 2.0.7 (toast)
+- **Utilidades**: nanoid, lucide-react, class-variance-authority
 
 ## 📁 Estructura del Proyecto
 
@@ -99,6 +105,20 @@ El proyecto usa **Next.js 16 App Router** con la siguiente estructura:
 - **`/game`** (`src/app/game/page.tsx`): Página principal del juego
   - Componente cliente que renderiza diferentes fases según el estado
   - Fases: `setup`, `reveal`, `play`, `vote`, `result`
+
+- **`/game/players`** (`src/app/game/players/page.tsx`): Configuración de jugadores
+  - Agregar/eliminar jugadores
+  - Asignar avatares personalizados
+  - Validación de nombres únicos
+
+- **`/game/categories`** (`src/app/game/categories/page.tsx`): Selección de categorías
+  - Selección múltiple de categorías disponibles
+  - Vista previa de cada categoría con emoji y descripción
+  - Opciones para seleccionar todas o limpiar selección
+
+- **`/game/duration`** (`src/app/game/duration/page.tsx`): Configuración de duración
+  - Establecer duración de la ronda (en minutos)
+  - Opciones predefinidas y personalización
 
 ### Layout global
 
@@ -169,11 +189,21 @@ Define la información de cada categoría:
 - `emoji`: Ícono emoji
 - `description`: Descripción de la categoría
 
+**Categorías disponibles:**
+- 🍕 **Comida**: Platos y alimentos conocidos
+- 🎬 **Películas**: Películas populares y reconocibles
+- 🧰 **Objetos**: Objetos cotidianos y cosas del día a día
+- ⚽ **Selección Argentina**: Jugadores de la Selección Argentina desde 1978 hasta hoy
+- 📱 **Tecnología**: Apps, dispositivos y conceptos tecnológicos
+- 🌎 **Lugares**: Ciudades, países y lugares famosos
+- 🍥 **Anime**: Series y personajes de anime conocidos
+- 🧉 **Cosas argentinas**: Cultura, costumbres y elementos típicos de Argentina
+
 ```typescript
 export const GAME_CATEGORIES: readonly GameCategory[] = [
   { id: "food", label: "Comida", emoji: "🍕", ... },
   { id: "movies", label: "Películas", emoji: "🎬", ... },
-  // ...
+  // ... 8 categorías en total
 ]
 ```
 
@@ -223,12 +253,18 @@ const pairs = SIMILAR_PAIRS_BY_CATEGORY[categoryId]
 
 ### Requisitos previos
 
-- Node.js 20 o superior
-- npm, yarn, pnpm o bun
+- **Node.js**: 20 o superior
+- **Gestor de paquetes**: npm, yarn, pnpm o bun
 
 ### Instalación
 
 ```bash
+# Clonar el repositorio (si aplica)
+git clone <repository-url>
+
+# Navegar al directorio del proyecto
+cd impostor
+
 # Instalar dependencias
 npm install
 ```
@@ -242,6 +278,11 @@ npm run dev
 
 Abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
+El servidor de desarrollo incluye:
+- Hot Module Replacement (HMR)
+- TypeScript type checking
+- ESLint en tiempo real
+
 ### Producción
 
 ```bash
@@ -252,21 +293,53 @@ npm run build
 npm start
 ```
 
+### Verificación de código
+
+```bash
+# Ejecutar el linter
+npm run lint
+```
+
 ## 🎯 Reglas del Juego
 
 ### Configuración
 
 - **Jugadores**: Mínimo 3, máximo 20
-- **Categorías**: Selecciona una categoría con palabras o pares
-- **Modo de pista**: Elige el nivel de dificultad para el impostor
+- **Categorías**: Selecciona una o múltiples categorías con palabras o pares
+- **Duración de ronda**: Configurable (por defecto 7 minutos)
+- **Duración de turno**: Configurable (por defecto 30 segundos)
+- **Modo de pista**: Elige el nivel de dificultad para el impostor:
+  - `none`: Sin pistas (más difícil para el impostor)
+  - `easy_similar`: Palabra similar (moderado)
+  - `hard_category`: Solo nombre de categoría (más fácil para el impostor)
 
 ### Fases del Juego
 
-1. **Setup**: Agrega jugadores y configura la partida
-2. **Reveal**: Cada jugador ve su rol de forma privada
-3. **Play**: Discusión con turnos y timer
-4. **Vote**: Votación grupal para expulsar al impostor
-5. **Result**: Resultado final y revelación
+1. **Setup**: 
+   - Agrega jugadores (con nombres únicos y avatares opcionales)
+   - Selecciona categorías
+   - Configura duración y modo de pista
+   - Inicia la partida
+
+2. **Reveal**: 
+   - Cada jugador ve su rol de forma privada (mantener presionado para revelar)
+   - Los tripulantes ven la palabra secreta
+   - El impostor ve su pista según el modo seleccionado
+
+3. **Play**: 
+   - Discusión con sistema de turnos opcional
+   - Timer de ronda y turno individual
+   - Los jugadores pueden pasar el teléfono entre turnos
+
+4. **Vote**: 
+   - Votación grupal para expulsar al impostor
+   - Selección de un jugador sospechoso
+   - Confirmación del voto
+
+5. **Result**: 
+   - Resultado final y revelación del impostor
+   - Muestra la palabra secreta
+   - Opción para jugar de nuevo
 
 ### Ganador
 
@@ -275,10 +348,12 @@ npm start
 
 ## 📝 Scripts Disponibles
 
-- `npm run dev` - Inicia el servidor de desarrollo
-- `npm run build` - Construye la app para producción
-- `npm start` - Inicia el servidor de producción
-- `npm run lint` - Ejecuta el linter
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev` | Inicia el servidor de desarrollo en modo watch |
+| `npm run build` | Construye la aplicación optimizada para producción |
+| `npm start` | Inicia el servidor de producción (requiere build previo) |
+| `npm run lint` | Ejecuta ESLint para verificar la calidad del código |
 
 ## 🎨 Personalización
 
@@ -317,22 +392,45 @@ npm start
 ### Modificar Configuración
 
 Las constantes del juego están en `src/lib/constants.ts`:
+- `APP_NAME`: Nombre de la aplicación ("Impostor")
 - `MIN_PLAYERS`: Mínimo de jugadores (default: 3)
 - `MAX_PLAYERS`: Máximo de jugadores (default: 20)
-- `DEFAULT_ROUND_SECONDS`: Duración de la ronda (default: 480)
-- `DEFAULT_TURN_SECONDS`: Duración del turno (default: 30)
+- `DEFAULT_ROUND_SECONDS`: Duración de la ronda en segundos (default: 420 = 7 minutos)
+- `DEFAULT_TURN_SECONDS`: Duración del turno en segundos (default: 30)
 
-## 🔒 Características de Seguridad
+## 🔒 Características de Seguridad y Calidad
 
-- **Anti-spoiler**: Sistema de "mantener presionado" para revelar información
-- **Validación**: Todos los inputs se validan con Zod
-- **Type Safety**: TypeScript strict mode sin `any`
+- **Anti-spoiler**: Sistema de "mantener presionado" para revelar información sensible
+- **Validación**: Todos los inputs se validan con Zod schemas
+- **Type Safety**: TypeScript strict mode sin `any` ni `as any`
+- **Validación de nombres**: Los nombres de jugadores deben ser únicos
+- **Validación de fases**: Las transiciones de fase están validadas en el store
+- **Estado inmutable**: El estado se gestiona de forma predecible con Zustand
 
 ## 📱 Compatibilidad
 
-- ✅ Navegadores modernos (Chrome, Firefox, Safari, Edge)
-- ✅ Dispositivos móviles (iOS, Android)
-- ✅ Responsive design (mobile-first)
+- ✅ **Navegadores modernos**: Chrome, Firefox, Safari, Edge (últimas 2 versiones)
+- ✅ **Dispositivos móviles**: iOS 12+, Android 8+
+- ✅ **Responsive design**: Mobile-first con soporte para tablets y desktop
+- ✅ **PWA ready**: Optimizado para funcionar como Progressive Web App
+
+## 🏗️ Arquitectura
+
+### Principios de diseño
+
+- **Feature-first**: Código organizado por características, no por tipo de archivo
+- **Separación de responsabilidades**: Lógica separada de UI, modelos separados de store
+- **Finite State Machine**: El juego se modela como una máquina de estados finita con fases explícitas
+- **Type-safe**: TypeScript strict con tipos discriminados para fases
+- **Validación centralizada**: Zod schemas para validación de datos
+
+### Flujo de datos
+
+```
+UI Components → Zustand Store → Logic Functions → Models (Zod)
+```
+
+Las acciones del store validan invariantes y gestionan transiciones de fase. La UI nunca muta el estado directamente.
 
 ## 🤝 Contribuir
 
@@ -341,6 +439,10 @@ Este es un proyecto personal, pero las sugerencias y mejoras son bienvenidas.
 ## 📄 Licencia
 
 Proyecto privado.
+
+---
+
+**Disfruta jugando Impostor con tus amigos! 🎮**
 
 ---
 
