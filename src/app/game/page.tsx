@@ -8,7 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { GameSettings } from "@/features/game/models/settings";
 import { useGameStore } from "@/features/game/store/useGameStore";
 import { MIN_PLAYERS } from "@/lib/constants";
 import { PremiumCard } from "@/components/ui/premium-card";
@@ -17,14 +23,28 @@ import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
+const HINT_MODE_OPTIONS: {
+  value: GameSettings["hintMode"];
+  label: string;
+}[] = [
+  { value: "none", label: "Sin pistas" },
+  { value: "easy_similar", label: "Pista fácil: palabra similar" },
+  { value: "hard_category", label: "Pista difícil: solo categoría" },
+];
+
+function getHintModeLabel(mode: GameSettings["hintMode"]): string {
+  return HINT_MODE_OPTIONS.find((o) => o.value === mode)?.label ?? mode;
+}
 
 function SetupPhase() {
   const players = useGameStore((state) => state.players);
   const settings = useGameStore((state) => state.settings);
   const setSettings = useGameStore((state) => state.setSettings);
   const createGame = useGameStore((state) => state.createGame);
+  const [hintDialogOpen, setHintDialogOpen] = useState(false);
 
   const handleStart = () => {
     if (players.length < MIN_PLAYERS) {
@@ -41,180 +61,234 @@ function SetupPhase() {
     setSettings({ impostorsCount: newCount });
   };
 
-  const handleHintModeChange = (value: string) => {
-    setSettings({
-      hintMode: value as "none" | "easy_similar" | "hard_category",
-    });
-  };
+  const handleHintModeSelect = useCallback(
+    (value: GameSettings["hintMode"]) => {
+      setSettings({ hintMode: value });
+      setHintDialogOpen(false);
+    },
+    [setSettings]
+  );
 
   const roundMinutes = Math.floor(settings.roundSeconds / 60);
+  const winningScore = settings.winningScore;
+  const playersOk = players.length >= MIN_PLAYERS;
+  const categoriesOk = settings.categoryIds.length >= 1;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {/* Header Image */}
-      <div className="flex justify-center mb-6">
+    <div className="flex min-h-screen flex-col max-w-md mx-auto w-full px-4">
+      {/* Hero image */}
+      <div className="flex justify-center pt-4 pb-2">
         <Image
           src="/impostor.png"
-          alt="Detective"
+          alt="Impostor"
           width={120}
           height={120}
+          sizes="(max-width: 640px) 96px, 120px"
           className="h-auto w-[96px] sm:w-[120px]"
           priority={false}
         />
       </div>
 
-      {/* Menu Items */}
-      <div className="space-y-3 pb-28">
-        {/* Jugadores */}
-        <Link href="/game/players">
-          <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center cursor-pointer hover:bg-white/[0.07] transition-colors">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">👥</span>
-              <div>
-                <div className="text-sm font-medium text-zinc-50">
-                  Jugadores
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {players.length}{" "}
-                  {players.length === 1 ? "jugador" : "jugadores"}
-                </div>
-              </div>
-            </div>
-            <span className="text-muted-foreground">›</span>
-          </div>
-        </Link>
-
-        {/* Impostores */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🕵️</span>
-            <div>
-              <div className="text-sm font-medium text-zinc-50">Impostores</div>
-              <div className="text-xs text-muted-foreground">
-                {settings.impostorsCount}{" "}
-                {settings.impostorsCount === 1 ? "impostor" : "impostores"}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleImpostorsChange(-1)}
-              disabled={settings.impostorsCount <= 1}
-              className="h-8 w-8"
-            >
-              −
-            </Button>
-            <span className="text-sm font-medium w-6 text-center">
-              {settings.impostorsCount}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleImpostorsChange(1)}
-              disabled={settings.impostorsCount >= 2}
-              className="h-8 w-8"
-            >
-              +
-            </Button>
-          </div>
-        </div>
-
-        {/* Pista para impostores */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-2xl">💡</span>
-            <div className="text-sm font-medium text-zinc-50">
-              Pista para impostores
-            </div>
-          </div>
-
-          <RadioGroup
-            value={settings.hintMode}
-            onValueChange={handleHintModeChange}
-            className="space-y-2"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="none" id="hint-none" />
-              <label
-                htmlFor="hint-none"
-                className="text-sm text-zinc-50 cursor-pointer flex-1"
-              >
-                Sin pistas
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="easy_similar" id="hint-easy" />
-              <label
-                htmlFor="hint-easy"
-                className="text-sm text-zinc-50 cursor-pointer flex-1"
-              >
-                Pista fácil: palabra similar
-              </label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="hard_category" id="hint-hard" />
-              <label
-                htmlFor="hint-hard"
-                className="text-sm text-zinc-50 cursor-pointer flex-1"
-              >
-                Pista difícil: solo categoría
-              </label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* Categorías */}
-        <Link href="/game/categories">
-          <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center cursor-pointer hover:bg-white/[0.07] transition-colors">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">📚</span>
-              <div>
-                <div className="text-sm font-medium text-zinc-50">
-                  Categorías
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {settings.categoryIds.length}{" "}
-                  {settings.categoryIds.length === 1
-                    ? "categoría"
-                    : "categorías"}{" "}
-                  seleccionada
-                  {settings.categoryIds.length !== 1 ? "s" : ""}
-                </div>
-              </div>
-            </div>
-            <span className="text-muted-foreground">›</span>
-          </div>
-        </Link>
-
-        {/* Duración */}
-        <Link href="/game/duration">
-          <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 flex justify-between items-center cursor-pointer hover:bg-white/[0.07] transition-colors">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">⏱️</span>
-              <div>
-                <div className="text-sm font-medium text-zinc-50">Duración</div>
-                <div className="text-xs text-muted-foreground">
-                  {roundMinutes} minutos
-                </div>
-              </div>
-            </div>
-            <span className="text-muted-foreground">›</span>
-          </div>
-        </Link>
+      {/* Header: nombre del juego */}
+      <div className="flex flex-col items-center text-center py-3 pb-5">
+        <h1
+          className="text-3xl font-semibold uppercase tracking-widest bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent"
+        >
+          Impostor
+        </h1>
       </div>
 
+      {/* Grid of tiles */}
+      <div className="grid grid-cols-2 gap-4 pb-28">
+        {/* 1) Jugadores */}
+        <Link href="/game/players" className="block">
+          <PremiumCard
+            className={cn(
+              "relative flex flex-col items-center justify-center text-center min-h-[140px]",
+              playersOk
+                ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30"
+                : "border border-amber-400/30"
+            )}
+          >
+            {playersOk && (
+              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 shadow-lg">
+                <span className="text-white text-xs leading-none">✓</span>
+              </div>
+            )}
+            <span className="text-4xl mb-2">👥</span>
+            <span className="text-base font-semibold text-zinc-50">Jugadores</span>
+            <span
+              className={cn(
+                "mt-2 rounded-full px-3 py-1 text-xs font-medium",
+                playersOk ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+              )}
+            >
+              {players.length} {players.length === 1 ? "jugador" : "jugadores"}
+            </span>
+            {!playersOk && (
+              <span className="mt-1.5 text-xs text-amber-400/90">Falta configurar</span>
+            )}
+          </PremiumCard>
+        </Link>
+
+        {/* 2) Impostores */}
+        <PremiumCard className="flex flex-col items-center justify-center text-center min-h-[140px] border border-white/10">
+          <span className="text-4xl mb-1">🕵️</span>
+          <span className="text-base font-semibold text-zinc-50">Impostores</span>
+          <span className="mt-1 text-3xl font-bold tabular-nums text-zinc-50">
+            {settings.impostorsCount}
+          </span>
+          <div className="mt-3 flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 p-0.5">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                handleImpostorsChange(-1);
+              }}
+              disabled={settings.impostorsCount <= 1}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-medium text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-zinc-400"
+              aria-label="Menos impostores"
+            >
+              −
+            </button>
+            <span className="min-w-5 text-center text-xs font-medium text-zinc-400">
+              {settings.impostorsCount === 1 ? "impostor" : "impostores"}
+            </span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                handleImpostorsChange(1);
+              }}
+              disabled={settings.impostorsCount >= 2}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-medium text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-50 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-zinc-400"
+              aria-label="Más impostores"
+            >
+              +
+            </button>
+          </div>
+        </PremiumCard>
+
+        {/* 3) Categorías */}
+        <Link href="/game/categories" className="block">
+          <PremiumCard
+            className={cn(
+              "relative flex flex-col items-center justify-center text-center min-h-[140px]",
+              categoriesOk
+                ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30"
+                : "border border-amber-400/30"
+            )}
+          >
+            {categoriesOk && (
+              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 shadow-lg">
+                <span className="text-white text-xs leading-none">✓</span>
+              </div>
+            )}
+            <span className="text-4xl mb-2">📚</span>
+            <span className="text-base font-semibold text-zinc-50">Categorías</span>
+            <span
+              className={cn(
+                "mt-2 rounded-full px-3 py-1 text-xs font-medium",
+                categoriesOk ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+              )}
+            >
+              {settings.categoryIds.length}{" "}
+              {settings.categoryIds.length === 1 ? "categoría" : "categorías"}
+            </span>
+            {!categoriesOk && (
+              <span className="mt-1.5 text-xs text-amber-400/90">Falta configurar</span>
+            )}
+          </PremiumCard>
+        </Link>
+
+        {/* 4) Duración y Meta — siempre OK, mostrar valor */}
+        <Link href="/game/duration" className="block">
+          <PremiumCard className="relative flex flex-col items-center justify-center text-center min-h-[140px] ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30">
+            <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 shadow-lg">
+              <span className="text-white text-xs leading-none">✓</span>
+            </div>
+            <span className="text-4xl mb-2">⏱️</span>
+            <span className="text-base font-semibold text-zinc-50">Duración y Meta</span>
+            <span className="mt-2 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
+              {roundMinutes} min · {winningScore} pts
+            </span>
+          </PremiumCard>
+        </Link>
+
+        {/* 5) Reglamento */}
+        <Link href="/game/rules" className="block">
+          <PremiumCard className="relative flex flex-col items-center justify-center text-center min-h-[140px] border border-white/10">
+            <span className="text-3xl mb-1.5">📋</span>
+            <span className="text-base font-semibold text-zinc-50">Reglamento</span>
+            <span className="mt-2 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-zinc-400">
+              Cómo se juega
+            </span>
+          </PremiumCard>
+        </Link>
+
+        {/* 6) Pistas para impostores */}
+        <PremiumCard
+          role="button"
+          tabIndex={0}
+          onClick={() => setHintDialogOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setHintDialogOpen(true);
+            }
+          }}
+          className="relative flex flex-col items-center justify-center text-center min-h-[140px] border border-white/10 cursor-pointer"
+          aria-label="Configurar pista para impostores"
+        >
+          <span className="text-3xl mb-1.5">💡</span>
+          <span className="text-sm font-semibold text-zinc-50 leading-tight px-1">Pistas impostores</span>
+          <span className="mt-2 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-zinc-400">
+            {getHintModeLabel(settings.hintMode)}
+          </span>
+        </PremiumCard>
+      </div>
+
+      {/* Dialog: elegir modo de pista */}
+      <Dialog open={hintDialogOpen} onOpenChange={setHintDialogOpen}>
+        <DialogContent className="max-w-md border-white/10 bg-zinc-900/95">
+          <DialogHeader>
+            <DialogTitle className="text-zinc-50">Pista para impostores</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2 py-2">
+            {HINT_MODE_OPTIONS.map((option) => {
+              const isSelected = settings.hintMode === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleHintModeSelect(option.value)}
+                  className={cn(
+                    "flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors",
+                    isSelected
+                      ? "border-emerald-400/50 bg-emerald-500/15 text-emerald-400"
+                      : "border-white/10 bg-white/5 text-zinc-50 hover:bg-white/10"
+                  )}
+                  aria-pressed={isSelected}
+                  aria-label={option.label}
+                >
+                  <span>{option.label}</span>
+                  {isSelected && (
+                    <span className="text-emerald-400" aria-hidden>✓</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Fixed bottom CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-50">
-        {/* Fade overlay (sin blur para evitar recuadro) */}
+      <div className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto w-full left-0 right-0">
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 z-0">
           <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.92),rgba(0,0,0,0))]" />
           <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(255,255,255,0.06),rgba(255,255,255,0))]" />
         </div>
-
-        <div className="relative z-10 px-4 pb-6 pt-10 max-w-md mx-auto">
+        <div className="relative z-10 px-4 pb-6 pt-10">
           <Button
             onClick={handleStart}
             variant="primaryGlow"
