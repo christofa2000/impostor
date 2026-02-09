@@ -98,13 +98,13 @@ function SetupPhase() {
         </h1>
       </div>
 
-      {/* Grid of tiles */}
-      <div className="grid grid-cols-2 gap-4 pb-28">
+      {/* Grid de tiles — 3 filas de altura uniforme */}
+      <div className="grid grid-cols-2 grid-rows-3 gap-4 pb-28 min-h-[510px] sm:min-h-[570px]">
         {/* 1) Jugadores */}
-        <Link href="/game/players" className="block">
+        <Link href="/game/players" className="block h-full">
           <PremiumCard
             className={cn(
-              "relative flex flex-col items-center justify-center text-center min-h-[140px]",
+              "relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4",
               playersOk
                 ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30"
                 : "border border-amber-400/30"
@@ -115,30 +115,37 @@ function SetupPhase() {
                 <span className="text-white text-xs leading-none">✓</span>
               </div>
             )}
-            <span className="text-4xl mb-2">👥</span>
-            <span className="text-base font-semibold text-zinc-50">Jugadores</span>
-            <span
-              className={cn(
-                "mt-2 rounded-full px-3 py-1 text-xs font-medium",
-                playersOk ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+            <div className="flex flex-col items-center">
+              <span className="text-4xl mb-2">👥</span>
+              <span className="text-base font-semibold text-zinc-50">Jugadores</span>
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <span
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium",
+                  playersOk ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                )}
+              >
+                {players.length} {players.length === 1 ? "jugador" : "jugadores"}
+              </span>
+              {!playersOk && (
+                <span className="text-xs text-amber-400/90">Falta configurar</span>
               )}
-            >
-              {players.length} {players.length === 1 ? "jugador" : "jugadores"}
-            </span>
-            {!playersOk && (
-              <span className="mt-1.5 text-xs text-amber-400/90">Falta configurar</span>
-            )}
+            </div>
           </PremiumCard>
         </Link>
 
         {/* 2) Impostores */}
-        <PremiumCard className="flex flex-col items-center justify-center text-center min-h-[140px] border border-white/10">
-          <span className="text-4xl mb-1">🕵️</span>
-          <span className="text-base font-semibold text-zinc-50">Impostores</span>
-          <span className="mt-1 text-3xl font-bold tabular-nums text-zinc-50">
-            {settings.impostorsCount}
-          </span>
-          <div className="mt-3 flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 p-0.5">
+        <PremiumCard className="h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 border border-white/10">
+          <div className="flex flex-col items-center">
+            <span className="text-4xl mb-1">🕵️</span>
+            <span className="text-base font-semibold text-zinc-50">Impostores</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <span className="text-3xl font-bold tabular-nums text-zinc-50">
+              {settings.impostorsCount}
+            </span>
+            <div className="mt-2 flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 p-0.5">
             <button
               type="button"
               onClick={(e) => {
@@ -167,13 +174,14 @@ function SetupPhase() {
               +
             </button>
           </div>
+          </div>
         </PremiumCard>
 
         {/* 3) Categorías */}
-        <Link href="/game/categories" className="block">
+        <Link href="/game/categories" className="block h-full">
           <PremiumCard
             className={cn(
-              "relative flex flex-col items-center justify-center text-center min-h-[140px]",
+              "relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4",
               categoriesOk
                 ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30"
                 : "border border-amber-400/30"
@@ -184,43 +192,51 @@ function SetupPhase() {
                 <span className="text-white text-xs leading-none">✓</span>
               </div>
             )}
-            <span className="text-4xl mb-2">📚</span>
-            <span className="text-base font-semibold text-zinc-50">Categorías</span>
-            <span
-              className={cn(
-                "mt-2 rounded-full px-3 py-1 text-xs font-medium",
-                categoriesOk ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+            <div className="flex flex-col items-center">
+              <span className="text-4xl mb-2">📚</span>
+              <span className="text-base font-semibold text-zinc-50">Categorías</span>
+            </div>
+            <div className="flex flex-col items-center gap-1.5">
+              <span
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium",
+                  categoriesOk ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                )}
+              >
+                {settings.categoryIds.length}{" "}
+                {settings.categoryIds.length === 1 ? "categoría" : "categorías"}
+              </span>
+              {!categoriesOk && (
+                <span className="text-xs text-amber-400/90">Falta configurar</span>
               )}
-            >
-              {settings.categoryIds.length}{" "}
-              {settings.categoryIds.length === 1 ? "categoría" : "categorías"}
-            </span>
-            {!categoriesOk && (
-              <span className="mt-1.5 text-xs text-amber-400/90">Falta configurar</span>
-            )}
+            </div>
           </PremiumCard>
         </Link>
 
         {/* 4) Duración y Meta — siempre OK, mostrar valor */}
-        <Link href="/game/duration" className="block">
-          <PremiumCard className="relative flex flex-col items-center justify-center text-center min-h-[140px] ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30">
+        <Link href="/game/duration" className="block h-full">
+          <PremiumCard className="relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30">
             <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 shadow-lg">
               <span className="text-white text-xs leading-none">✓</span>
             </div>
-            <span className="text-4xl mb-2">⏱️</span>
-            <span className="text-base font-semibold text-zinc-50">Duración y Meta</span>
-            <span className="mt-2 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
+            <div className="flex flex-col items-center">
+              <span className="text-4xl mb-2">⏱️</span>
+              <span className="text-base font-semibold text-zinc-50">Duración y Meta</span>
+            </div>
+            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
               {roundMinutes} min · {winningScore} pts
             </span>
           </PremiumCard>
         </Link>
 
         {/* 5) Reglamento */}
-        <Link href="/game/rules" className="block">
-          <PremiumCard className="relative flex flex-col items-center justify-center text-center min-h-[140px] border border-white/10">
-            <span className="text-3xl mb-1.5">📋</span>
-            <span className="text-base font-semibold text-zinc-50">Reglamento</span>
-            <span className="mt-2 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-zinc-400">
+        <Link href="/game/rules" className="block h-full">
+          <PremiumCard className="relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 border border-white/10">
+            <div className="flex flex-col items-center">
+              <span className="text-3xl mb-1.5">📋</span>
+              <span className="text-base font-semibold text-zinc-50">Reglamento</span>
+            </div>
+            <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-zinc-400">
               Cómo se juega
             </span>
           </PremiumCard>
@@ -237,12 +253,14 @@ function SetupPhase() {
               setHintDialogOpen(true);
             }
           }}
-          className="relative flex flex-col items-center justify-center text-center min-h-[140px] border border-white/10 cursor-pointer"
+          className="relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 border border-white/10 cursor-pointer"
           aria-label="Configurar pista para impostores"
         >
-          <span className="text-3xl mb-1.5">💡</span>
-          <span className="text-sm font-semibold text-zinc-50 leading-tight px-1">Pistas impostores</span>
-          <span className="mt-2 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-zinc-400">
+          <div className="flex flex-col items-center">
+            <span className="text-3xl mb-1.5">💡</span>
+            <span className="text-sm font-semibold text-zinc-50 leading-tight px-1">Pistas impostores</span>
+          </div>
+          <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-zinc-400">
             {getHintModeLabel(settings.hintMode)}
           </span>
         </PremiumCard>
@@ -436,43 +454,15 @@ function RevealPhase() {
                   </span>
                 )}
               </div>
-              <p className="text-lg font-semibold">{currentPlayer?.name}</p>
+              <p className="text-3xl font-bold text-zinc-50">{currentPlayer?.name}</p>
             </div>
 
             <div className="space-y-4">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <div
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold tracking-wide border",
-                    isImpostor
-                      ? "border-[hsl(var(--impostor)/0.45)] bg-[hsl(var(--impostor)/0.12)] text-[hsl(var(--impostor))]"
-                      : "border-[hsl(var(--crew)/0.45)] bg-[hsl(var(--crew)/0.12)] text-[hsl(var(--crew))]",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "h-2 w-2 rounded-full animate-pulse",
-                      isImpostor
-                        ? "bg-[hsl(var(--impostor))]"
-                        : "bg-[hsl(var(--crew))]",
-                    )}
-                  />
-                  <span>{isImpostor ? "IMPOSTOR" : "TRIPULANTE"}</span>
-                </div>
-              </div>
-
-              <div>
-                <p
-                  className={cn(
-                    "text-5xl font-black uppercase tracking-wider mb-4 drop-shadow-lg",
-                    isImpostor
-                      ? "text-[hsl(var(--impostor))]"
-                      : "text-[hsl(var(--crew))]",
-                  )}
-                >
-                  {isImpostor ? "IMPOSTOR" : "TRIPULANTE"}
+              {isImpostor ? (
+                <p className="text-red-500 font-bold uppercase tracking-wide text-3xl drop-shadow-[0_0_12px_rgba(255,0,0,0.6)]">
+                  Impostor
                 </p>
-              </div>
+              ) : null}
 
               {isImpostor ? (
                 <div className="space-y-3">
