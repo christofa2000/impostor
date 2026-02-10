@@ -16,7 +16,7 @@ import { PlayerSchema, type Player, type PlayerInput } from "../models/player"
 import { GameSettingsSchema, type GameSettings } from "../models/settings"
 import type { GamePhase } from "../models/phase"
 import type { LastRoundResult } from "../models/last-round-result"
-import { pickRandom, shuffle } from "../logic/random"
+import { pickRandom, pickRandomUnique, shuffle } from "../logic/random"
 import { ensureUniquePlayerNames } from "../logic/game-helpers"
 import { assignMissingAvatars } from "../logic/avatars"
 import { applyRoundScores } from "../logic/score"
@@ -26,7 +26,7 @@ interface GameState {
   players: Player[]
   settings: GameSettings
   secretWord: string | null
-  impostorId: string | null
+  impostorIds: readonly string[]
   impostorHintWord: string | null
   impostorHintCategoryName: string | null
   /** Current round number (1-based). */
@@ -50,8 +50,10 @@ interface GameActions {
   isCategorySelected: (categoryId: CategoryId) => boolean
   createGame: () => string | null
   revealNext: () => void
-  selectVote: (targetPlayerId: string | null) => void
-  confirmVote: () => void
+  /** Toggle vote for playerId. Returns error message (e.g. "Máximo X votos") or null on success. */
+  selectVote: (playerId: string) => string | null
+  /** Returns error message for toast (e.g. "Tenés que elegir X jugadores") or null on success. */
+  confirmVote: () => string | null
   /** If guess matches secretWord (case-insensitive, trim), ends round and impostor wins. */
   impostorGuessWord: (guess: string) => boolean
   /** Transition from result to score phase (puntajes). */
@@ -80,7 +82,7 @@ const initialState: GameState = {
   players: [],
   settings: defaultSettings,
   secretWord: null,
-  impostorId: null,
+  impostorIds: [],
   impostorHintWord: null,
   impostorHintCategoryName: null,
   roundNumber: 1,
@@ -285,7 +287,17 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const playersWithAvatares = assignMissingAvatars(players, AVATARS)
     set({ players: playersWithAvatares })
 
-    const impostor = pickRandom(playersWithAvatares)
+    const impostorCount = settings.impostorsCount
+    if (impostorCount < 1) {
+      return "Debe haber al menos 1 impostor"
+    }
+    if (impostorCount > playersWithAvatares.length - 1) {
+      return "Debe quedar al menos un jugador de la tripulación"
+    }
+
+    const playerIds = playersWithAvatares.map((p) => p.id)
+    const impostorIds = pickRandomUnique(playerIds, impostorCount)
+
     let secretWord: string
     let impostorHintWord: string | null = null
     let impostorHintCategoryName: string | null = null
@@ -324,7 +336,6 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       }
     }
 
-    const playerIds = playersWithAvatares.map((p) => p.id)
     const shuffledPlayerIds = shuffle(playerIds)
     const firstPlayerId = shuffledPlayerIds[0] ?? ""
     const remainingPlayerIds = shuffledPlayerIds.slice(1)
@@ -340,7 +351,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         currentPlayerId: firstPlayerId,
         remainingPlayerIds,
       },
-      impostorId: impostor.id,
+      impostorIds,
       secretWord,
       impostorHintWord,
       impostorHintCategoryName,
@@ -364,7 +375,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       set({
         phase: {
           type: "vote",
-          selectedPlayerId: null,
+          selectedVoteIds: [],
         },
       })
     } else {
@@ -379,60 +390,89 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }
   },
 
-  selectVote: (targetPlayerId: string | null) => {
+  selectVote: (playerId: string): string | null => {
     const state = get()
     if (state.phase.type !== "vote") {
-      return
+      return null
     }
 
-    // Validate that targetPlayerId exists in players if not null
-    if (targetPlayerId !== null) {
-      const isValidPlayer = state.players.some((p) => p.id === targetPlayerId)
-      if (!isValidPlayer) {
-        return
-      }
+    const isValidPlayer = state.players.some((p) => p.id === playerId)
+    if (!isValidPlayer) {
+      return null
+    }
+
+    const { selectedVoteIds } = state.phase
+    const maxVotes = state.settings.impostorsCount
+    const isSelected = selectedVoteIds.includes(playerId)
+
+    if (isSelected) {
+      set({
+        phase: {
+          ...state.phase,
+          selectedVoteIds: selectedVoteIds.filter((id) => id !== playerId),
+        },
+      })
+      return null
+    }
+
+    if (selectedVoteIds.length >= maxVotes) {
+      return `Máximo ${maxVotes} voto${maxVotes > 1 ? "s" : ""}`
     }
 
     set({
       phase: {
         ...state.phase,
-        selectedPlayerId: targetPlayerId,
+        selectedVoteIds: [...selectedVoteIds, playerId],
       },
     })
+    return null
   },
 
-  confirmVote: () => {
+  confirmVote: (): string | null => {
     const state = get()
     if (state.phase.type !== "vote") {
-      return
+      return null
     }
 
-    const { selectedPlayerId } = state.phase
-    const { impostorId, secretWord } = state
+    const { selectedVoteIds } = state.phase
+    const { impostorIds, secretWord, settings } = state
+    const impostorCount = settings.impostorsCount
 
-    if (!impostorId || !secretWord) {
-      return
+    if (impostorIds.length === 0 || !secretWord) {
+      return null
     }
 
-    // reason: skip = no one voted, voted_out = someone was voted out
-    const reason: LastRoundResult["reason"] =
-      selectedPlayerId === null ? "skip" : "voted_out"
+    if (selectedVoteIds.length !== impostorCount) {
+      return `Tenés que elegir ${impostorCount} jugador${impostorCount > 1 ? "es" : ""}`
+    }
 
-    // Victory rules (by vote): impostor not chosen => impostor wins; chosen => crew wins
-    const chosenIsImpostor = selectedPlayerId === impostorId
-    const winner: "crew" | "impostor" = chosenIsImpostor ? "crew" : "impostor"
+    const selectedSet = new Set(selectedVoteIds)
+    const impostorSet = new Set(impostorIds)
+    const votedAllImpostors =
+      selectedSet.size === impostorSet.size &&
+      [...selectedSet].every((id) => impostorSet.has(id))
+
+    const winner: "crew" | "impostor" = votedAllImpostors ? "crew" : "impostor"
+    const reason: LastRoundResult["reason"] = votedAllImpostors
+      ? "voted_all_impostors"
+      : "wrong_vote"
 
     const lastRoundResult: LastRoundResult = {
       winner,
       reason,
-      impostorId,
+      impostorIds,
       secretWord,
-      votedPlayerId: selectedPlayerId,
+      votedPlayerId: selectedVoteIds[0] ?? null,
+      votedPlayerIds: selectedVoteIds,
       impostorGuessedWord: false,
     }
 
-    const playersWithScores = applyRoundScores(state.players, winner, impostorId)
-    const winningScore = state.settings.winningScore
+    const playersWithScores = applyRoundScores(
+      state.players,
+      winner,
+      impostorIds
+    )
+    const winningScore = settings.winningScore
     const maxScore = Math.max(
       0,
       ...playersWithScores.map((p) => p.score)
@@ -448,7 +488,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       phase: {
         type: "result",
         winner,
-        impostorId,
+        impostorIds,
         secretWord,
       },
       lastRoundResult,
@@ -456,6 +496,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       gameOver: isGameOver,
       winnerPlayerIds,
     })
+    return null
   },
 
   impostorGuessWord: (guess: string) => {
@@ -464,8 +505,8 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       return false
     }
 
-    const { secretWord, impostorId } = state
-    if (!secretWord || !impostorId) {
+    const { secretWord, impostorIds } = state
+    if (!secretWord || impostorIds.length === 0) {
       return false
     }
 
@@ -478,13 +519,18 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     const lastRoundResult: LastRoundResult = {
       winner: "impostor",
       reason: "guessed_word",
-      impostorId,
+      impostorIds,
       secretWord,
       votedPlayerId: null,
+      votedPlayerIds: [],
       impostorGuessedWord: true,
     }
 
-    const playersWithScores = applyRoundScores(state.players, "impostor", impostorId)
+    const playersWithScores = applyRoundScores(
+      state.players,
+      "impostor",
+      impostorIds
+    )
     const winningScore = state.settings.winningScore
     const maxScore = Math.max(
       0,
@@ -501,7 +547,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       phase: {
         type: "result",
         winner: "impostor",
-        impostorId,
+        impostorIds,
         secretWord,
       },
       lastRoundResult,
@@ -541,7 +587,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       players: playersWithZeroScore,
       settings: state.settings,
       secretWord: null,
-      impostorId: null,
+      impostorIds: [],
       impostorHintWord: null,
       impostorHintCategoryName: null,
       roundNumber: 1,
@@ -557,7 +603,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       ...initialState,
       settings: defaultSettings,
       secretWord: null,
-      impostorId: null,
+      impostorIds: [],
       impostorHintWord: null,
       impostorHintCategoryName: null,
       roundNumber: 1,
@@ -572,7 +618,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     set({
       phase: { type: "setup" },
       secretWord: null,
-      impostorId: null,
+      impostorIds: [],
       impostorHintWord: null,
       impostorHintCategoryName: null,
       roundNumber: 1,
@@ -590,7 +636,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       ...initialState,
       settings: defaultSettings,
       secretWord: null,
-      impostorId: null,
+      impostorIds: [],
       impostorHintWord: null,
       impostorHintCategoryName: null,
       roundNumber: 1,

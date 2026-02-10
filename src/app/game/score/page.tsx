@@ -23,6 +23,10 @@ function getReasonLabel(reason: RoundEndReason, impostorGuessedWord?: boolean): 
   switch (reason) {
     case "voted_out":
       return "Votación"
+    case "voted_all_impostors":
+      return "Acertaron a todos los impostores"
+    case "wrong_vote":
+      return "Voto incorrecto"
     case "skip":
       return "Skip"
     case "not_voted":

@@ -326,7 +326,7 @@ function RevealPhase() {
   const phase = useGameStore((state) => state.phase);
   const players = useGameStore((state) => state.players);
   const secretWord = useGameStore((state) => state.secretWord);
-  const impostorId = useGameStore((state) => state.impostorId);
+  const impostorIds = useGameStore((state) => state.impostorIds);
   const impostorHintWord = useGameStore((state) => state.impostorHintWord);
   const impostorHintCategoryName = useGameStore(
     (state) => state.impostorHintCategoryName,
@@ -363,7 +363,8 @@ function RevealPhase() {
     [players, phase.currentPlayerId],
   );
 
-  const isImpostor = currentPlayer?.id === impostorId;
+  const isImpostor =
+    currentPlayer != null && impostorIds.includes(currentPlayer.id);
   const remainingCount = phase.remainingPlayerIds.length;
 
   const getAvatarEmoji = (name: string): string => {
@@ -467,7 +468,11 @@ function RevealPhase() {
 
               {isImpostor ? (
                 <div className="space-y-3">
-                  <p className="text-lg font-semibold">SOS EL IMPOSTOR</p>
+                  <p className="text-lg font-semibold">
+                    {impostorIds.length > 1
+                      ? "SOS UNO DE LOS IMPOSTORES"
+                      : "SOS EL IMPOSTOR"}
+                  </p>
 
                   {settings.hintMode === "easy_similar" && impostorHintWord && (
                     <div className="mt-3 rounded-lg bg-muted/50 p-3">
@@ -592,6 +597,7 @@ function RevealPhase() {
 function VotePhase() {
   const phase = useGameStore((state) => state.phase);
   const players = useGameStore((state) => state.players);
+  const settings = useGameStore((state) => state.settings);
   const selectVote = useGameStore((state) => state.selectVote);
   const confirmVote = useGameStore((state) => state.confirmVote);
   const impostorGuessWord = useGameStore((state) => state.impostorGuessWord);
@@ -599,6 +605,14 @@ function VotePhase() {
   const [guessInput, setGuessInput] = useState("");
 
   if (phase.type !== "vote") return null;
+
+  const maxVotes = settings.impostorsCount;
+  const selectedVoteIds = phase.selectedVoteIds;
+
+  const handleSelectVote = (playerId: string) => {
+    const error = selectVote(playerId);
+    if (error) toast.error(error);
+  };
 
   const handleGuessConfirm = () => {
     const guess = guessInput.trim();
@@ -618,23 +632,32 @@ function VotePhase() {
         <CardHeader>
           <CardTitle>Votación</CardTitle>
         <CardDescription>
-          Discutan y voten quién es el impostor
+          {maxVotes > 1
+            ? `Elegí hasta ${maxVotes} jugadores (máximo ${maxVotes} votos)`
+            : "Discutan y voten quién es el impostor"}
         </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-sm font-medium text-muted-foreground">
+            Seleccionados: {selectedVoteIds.length}/{maxVotes}
+          </p>
           <div className="space-y-2">
-            {players.map((player) => (
-              <Button
-                key={player.id}
-                variant={
-                  phase.selectedPlayerId === player.id ? "default" : "outline"
-                }
-                className="w-full justify-start"
-                onClick={() => selectVote(player.id)}
-              >
-                {player.name}
-              </Button>
-            ))}
+            {players.map((player) => {
+              const isSelected = selectedVoteIds.includes(player.id);
+              const atLimit = selectedVoteIds.length >= maxVotes;
+              const disabled = !isSelected && atLimit;
+              return (
+                <Button
+                  key={player.id}
+                  variant={isSelected ? "default" : "outline"}
+                  className="w-full justify-start"
+                  disabled={disabled}
+                  onClick={() => handleSelectVote(player.id)}
+                >
+                  {player.name}
+                </Button>
+              );
+            })}
           </div>
           <div className="flex gap-2">
             <Button
@@ -645,7 +668,11 @@ function VotePhase() {
               Adivinar palabra
             </Button>
             <Button
-              onClick={confirmVote}
+              onClick={() => {
+                const err = confirmVote();
+                if (err) toast.error(err);
+              }}
+              disabled={selectedVoteIds.length !== maxVotes}
               className="flex-1 shadow-lg active:scale-[0.98] transition-all duration-200"
               size="lg"
             >
@@ -701,7 +728,7 @@ function ResultPhase() {
 
   if (phase.type !== "result") return null;
 
-  const impostor = players.find((p) => p.id === phase.impostorId);
+  const impostors = players.filter((p) => phase.impostorIds.includes(p.id));
   const isCrewWin = phase.winner === "crew";
 
   return (
@@ -714,8 +741,20 @@ function ResultPhase() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2 rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">El impostor era:</p>
-          <p className="text-xl font-bold">{impostor?.name}</p>
+          <p className="text-sm text-muted-foreground">
+            {impostors.length === 1
+              ? "El impostor era:"
+              : "Los impostores eran:"}
+          </p>
+          {impostors.length === 1 ? (
+            <p className="text-xl font-bold">{impostors[0]?.name}</p>
+          ) : (
+            <ul className="list-disc list-inside space-y-1 text-xl font-bold">
+              {impostors.map((p) => (
+                <li key={p.id}>{p.name}</li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="space-y-2 rounded-lg border p-4">
           <p className="text-sm text-muted-foreground">

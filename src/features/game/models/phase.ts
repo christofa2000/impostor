@@ -7,12 +7,12 @@ export type GamePhase =
     }
   | {
       type: "vote"
-      selectedPlayerId: string | null
+      selectedVoteIds: string[]
     }
   | {
       type: "result"
       winner: "crew" | "impostor"
-      impostorId: string
+      impostorIds: readonly string[]
       secretWord: string
     }
   | { type: "score" }

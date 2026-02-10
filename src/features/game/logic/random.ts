@@ -28,3 +28,20 @@ export function shuffle<T>(arr: readonly T[], rng: () => number = Math.random): 
   }
   return result
 }
+
+/**
+ * Picks `count` unique random elements from an array (no repetition).
+ * @param arr - The array to pick from
+ * @param count - Number of elements to pick (must be >= 0 and <= arr.length)
+ * @param rng - Optional random number generator
+ * @returns New array of length `count` with unique elements
+ */
+export function pickRandomUnique<T>(
+  arr: readonly T[],
+  count: number,
+  rng: () => number = Math.random
+): T[] {
+  if (count <= 0) return []
+  if (count >= arr.length) return shuffle(arr, rng)
+  return shuffle(arr, rng).slice(0, count)
+}
