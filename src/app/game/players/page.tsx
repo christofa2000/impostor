@@ -20,19 +20,30 @@ import { PremiumCard } from "@/components/ui/premium-card"
 import { pickRandom } from "@/features/game/logic/random"
 import type { Player } from "@/features/game/models/player"
 
+/** Calcula el siguiente nombre por defecto "Jugador N" sin reutilizar números ya usados. */
+function getNextDefaultPlayerName(players: { name: string }[]): string {
+  const numbers = players
+    .map((p) => {
+      const m = p.name.trim().match(/^Jugador (\d+)$/)
+      return m ? parseInt(m[1], 10) : 0
+    })
+    .filter((n) => n > 0)
+  const max = numbers.length > 0 ? Math.max(...numbers) : 0
+  return `Jugador ${max + 1}`
+}
+
 export default function PlayersPage() {
   const router = useRouter()
   const storePlayers = useGameStore((state) => state.players)
   const setPlayers = useGameStore((state) => state.setPlayers)
-  const setPlayerAvatar = useGameStore((state) => state.setPlayerAvatar)
 
-  const [localPlayers, setLocalPlayers] = useState<Player[]>(
+  const [localPlayers, setLocalPlayers] = useState<Player[]>(() =>
     storePlayers.length > 0
       ? storePlayers
       : [
-          { id: nanoid(), name: "", score: 0 },
-          { id: nanoid(), name: "", score: 0 },
-          { id: nanoid(), name: "", score: 0 },
+          { id: nanoid(), name: "Jugador 1", score: 0 },
+          { id: nanoid(), name: "Jugador 2", score: 0 },
+          { id: nanoid(), name: "Jugador 3", score: 0 },
         ]
   )
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false)
@@ -46,7 +57,11 @@ export default function PlayersPage() {
 
   const addPlayer = () => {
     if (localPlayers.length < MAX_PLAYERS) {
-      setLocalPlayers([...localPlayers, { id: nanoid(), name: "", score: 0 }])
+      const nextName = getNextDefaultPlayerName(localPlayers)
+      setLocalPlayers([
+        ...localPlayers,
+        { id: nanoid(), name: nextName, score: 0 },
+      ])
     }
   }
 
@@ -130,7 +145,7 @@ export default function PlayersPage() {
                     className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3"
                   >
                     <Input
-                      placeholder={`Jugador ${index + 1}`}
+                      placeholder="Nombre del jugador"
                       value={player.name}
                       onChange={(e) => handlePlayerNameChange(index, e.target.value)}
                       className="flex-1 bg-transparent border-0 shadow-none px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
