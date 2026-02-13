@@ -24,15 +24,16 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className="dark h-full">
       <body
-        className={`${sora.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${sora.variable} ${geistMono.variable} font-sans antialiased h-full`}
       >
-        <div className="relative min-h-screen">
-          <main className="max-w-md mx-auto px-3 pt-4 pb-24 min-h-screen sm:px-4 sm:pt-6">
+        <div className="relative min-h-full flex flex-col">
+          <main className="flex-1 flex flex-col w-full max-w-md mx-auto px-3 pt-4 sm:px-4 sm:pt-6 min-h-0">
             {children}
           </main>
         </div>
+
         <Toaster />
       </body>
     </html>

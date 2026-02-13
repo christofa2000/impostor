@@ -1,5 +1,4 @@
 @import "tailwindcss";
-
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
@@ -57,52 +56,39 @@
 :root {
   --radius: 0.75rem;
 
-  /* Background - Oscuro, un poco más claro */
   --background: hsl(240 40% 18%);
   --foreground: hsl(0 0% 98%);
 
-  /* Cards - Un poco más claras */
   --card: hsl(240 35% 21%);
   --card-foreground: hsl(0 0% 98%);
 
-  /* Popover */
   --popover: hsl(240 35% 19%);
   --popover-foreground: hsl(0 0% 98%);
 
-  /* Primary - Azul eléctrico */
   --primary: hsl(210 100% 60%);
   --primary-foreground: hsl(0 0% 100%);
 
-  /* Secondary - Cyan */
   --secondary: hsl(180 95% 55%);
   --secondary-foreground: hsl(0 0% 100%);
 
-  /* Muted */
   --muted: hsl(240 28% 26%);
   --muted-foreground: hsl(240 20% 85%);
 
-  /* Accent - Mismo azul que primary (todos los botones azules) */
   --accent: hsl(210 100% 60%);
   --accent-foreground: hsl(0 0% 100%);
 
-  /* Destructive */
   --destructive: hsl(0 90% 60%);
 
-  /* Borders */
   --border: hsl(240 28% 30%);
   --input: hsl(240 28% 28%);
-
-  /* Ring - Azul eléctrico */
   --ring: hsl(210 100% 60%);
 
-  /* Charts - Paleta azul/cyan/verde */
   --chart-1: hsl(210 100% 60%);
   --chart-2: hsl(180 95% 55%);
   --chart-3: hsl(200 95% 58%);
   --chart-4: hsl(140 85% 55%);
   --chart-5: hsl(190 90% 55%);
 
-  /* Sidebar */
   --sidebar: hsl(240 35% 19%);
   --sidebar-foreground: hsl(0 0% 98%);
   --sidebar-primary: hsl(210 100% 60%);
@@ -112,13 +98,11 @@
   --sidebar-border: hsl(240 28% 30%);
   --sidebar-ring: hsl(210 100% 60%);
 
-  /* Tokens Crew vs Impostor - Vibrantes */
   --crew: hsl(180 95% 55%);
   --crew-foreground: hsl(0 0% 100%);
   --impostor: hsl(0 90% 60%);
   --impostor-foreground: hsl(0 0% 100%);
 
-  /* Estados */
   --danger: hsl(0 90% 60%);
   --info: hsl(210 100% 60%);
   --success: hsl(140 85% 55%);
@@ -127,55 +111,6 @@
 .dark {
   --background: hsl(240 40% 18%);
   --foreground: hsl(0 0% 98%);
-
-  --card: hsl(240 35% 21%);
-  --card-foreground: hsl(0 0% 98%);
-
-  --popover: hsl(240 35% 19%);
-  --popover-foreground: hsl(0 0% 98%);
-
-  --primary: hsl(210 100% 60%);
-  --primary-foreground: hsl(0 0% 100%);
-
-  --secondary: hsl(180 95% 55%);
-  --secondary-foreground: hsl(0 0% 100%);
-
-  --muted: hsl(240 28% 26%);
-  --muted-foreground: hsl(240 20% 85%);
-
-  --accent: hsl(210 100% 60%);
-  --accent-foreground: hsl(0 0% 100%);
-
-  --destructive: hsl(0 90% 60%);
-
-  --border: hsl(240 28% 30%);
-  --input: hsl(240 28% 28%);
-
-  --ring: hsl(210 100% 60%);
-
-  --chart-1: hsl(210 100% 60%);
-  --chart-2: hsl(180 95% 55%);
-  --chart-3: hsl(200 95% 58%);
-  --chart-4: hsl(140 85% 55%);
-  --chart-5: hsl(190 90% 55%);
-
-  --sidebar: hsl(240 35% 19%);
-  --sidebar-foreground: hsl(0 0% 98%);
-  --sidebar-primary: hsl(210 100% 60%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(240 30% 25%);
-  --sidebar-accent-foreground: hsl(0 0% 98%);
-  --sidebar-border: hsl(240 28% 30%);
-  --sidebar-ring: hsl(210 100% 60%);
-
-  --crew: hsl(180 95% 55%);
-  --crew-foreground: hsl(0 0% 100%);
-  --impostor: hsl(0 90% 60%);
-  --impostor-foreground: hsl(0 0% 100%);
-
-  --danger: hsl(0 90% 60%);
-  --info: hsl(210 100% 60%);
-  --success: hsl(140 85% 55%);
 }
 
 @layer base {
@@ -183,18 +118,12 @@
     @apply border-border outline-ring/50;
   }
 
-  button {
-    border: none;
-    box-shadow: none;
-  }
-
-  /* Contenedores de CTA fijos sin sombra */
-  [class*="fixed"][class*="bottom-0"] {
-    box-shadow: none;
+  html {
+    @apply h-full;
   }
 
   body {
-    @apply text-foreground min-h-screen text-sm sm:text-base;
+    @apply text-foreground h-full text-sm sm:text-base;
     background: linear-gradient(
       160deg,
       hsl(240 45% 22%) 0%,
@@ -203,6 +132,11 @@
       hsl(232 42% 13%) 100%
     );
     background-attachment: fixed;
+  }
+
+  button {
+    border: none;
+    box-shadow: none;
   }
 
   h1 {
