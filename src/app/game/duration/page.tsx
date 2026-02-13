@@ -56,8 +56,8 @@ export default function DurationPage() {
                       className={cn(
                         "relative rounded-2xl p-4 border bg-white/5 transition-all",
                         isSelected
-                          ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-transparent border-emerald-400/50"
-                          : "border-white/10 hover:bg-white/[0.07]",
+                          ? "border-2 border-emerald-400/50"
+                          : "border border-white/20 hover:bg-white/10",
                         "hover:scale-[1.02] active:scale-[0.98]"
                       )}
                     >
@@ -70,7 +70,7 @@ export default function DurationPage() {
                         </span>
                       </div>
                       {isSelected && (
-                        <div className="absolute top-2 right-2 bg-emerald-400 rounded-full w-5 h-5 flex items-center justify-center shadow-lg">
+                        <div className="absolute top-2 right-2 bg-emerald-400 rounded-full w-5 h-5 flex items-center justify-center">
                           <span className="text-white text-[10px] leading-none">✓</span>
                         </div>
                       )}
@@ -104,8 +104,8 @@ export default function DurationPage() {
                       className={cn(
                         "relative rounded-2xl p-4 border bg-white/5 transition-all",
                         isSelected
-                          ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-transparent border-emerald-400/50"
-                          : "border-white/10 hover:bg-white/[0.07]",
+                          ? "border-2 border-emerald-400/50"
+                          : "border border-white/20 hover:bg-white/10",
                         "hover:scale-[1.02] active:scale-[0.98]"
                       )}
                     >
@@ -118,7 +118,7 @@ export default function DurationPage() {
                         </span>
                       </div>
                       {isSelected && (
-                        <div className="absolute top-2 right-2 bg-emerald-400 rounded-full w-5 h-5 flex items-center justify-center shadow-lg">
+                        <div className="absolute top-2 right-2 bg-emerald-400 rounded-full w-5 h-5 flex items-center justify-center">
                           <span className="text-white text-[10px] leading-none">✓</span>
                         </div>
                       )}
@@ -135,20 +135,15 @@ export default function DurationPage() {
         </div>
 
         {/* Fixed bottom button */}
-        <div className="fixed inset-x-0 bottom-0 z-50">
-          {/* Overlay fade */}
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-[linear-gradient(to_top,rgba(0,0,0,0.85),rgba(0,0,0,0))] backdrop-blur-sm pointer-events-none z-0" />
-          {/* Button wrapper */}
-          <div className="relative z-10 px-4 pb-6 pt-10 max-w-md mx-auto">
-            <Button
-              onClick={handleSave}
-              variant="primaryGlow"
-              size="premium"
-              className="w-full"
-            >
-              Guardar
-            </Button>
-          </div>
+        <div className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto w-full px-4 pt-4 pb-6">
+          <Button
+            onClick={handleSave}
+            variant="primaryGlow"
+            size="premium"
+            className="w-full"
+          >
+            Guardar
+          </Button>
         </div>
       </div>
     </>

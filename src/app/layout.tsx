@@ -28,7 +28,7 @@ export default function RootLayout({
       <body
         className={`${sora.variable} ${geistMono.variable} font-sans antialiased`}
       >
-        <div className="relative min-h-screen bg-[radial-gradient(circle_at_top,_#0f172a,_#0b1220_40%,_#050a14)]">
+        <div className="relative min-h-screen">
           <main className="max-w-md mx-auto px-4 pt-6 pb-24 min-h-screen">
             {children}
           </main>

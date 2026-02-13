@@ -20,12 +20,13 @@ import { useGameStore } from "@/features/game/store/useGameStore";
 import { MIN_PLAYERS } from "@/lib/constants";
 import { PremiumCard } from "@/components/ui/premium-card";
 import { cn } from "@/lib/utils";
-import { animate, motion, useMotionValue, useTransform } from "framer-motion";
+import { AnimatePresence, animate, motion, useMotionValue, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { MessageCircle, User } from "lucide-react";
 
 const HINT_MODE_OPTIONS: {
   value: GameSettings["hintMode"];
@@ -107,12 +108,12 @@ function SetupPhase() {
             className={cn(
               "relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4",
               playersOk
-                ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30"
-                : "border border-amber-400/30"
+                ? "border-2 border-emerald-400/50"
+                : "border border-white/20"
             )}
           >
             {playersOk && (
-              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 shadow-lg">
+              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90">
                 <span className="text-white text-xs leading-none">✓</span>
               </div>
             )}
@@ -184,12 +185,12 @@ function SetupPhase() {
             className={cn(
               "relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4",
               categoriesOk
-                ? "ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30"
-                : "border border-amber-400/30"
+                ? "border-2 border-emerald-400/50"
+                : "border border-white/20"
             )}
           >
             {categoriesOk && (
-              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 shadow-lg">
+              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90">
                 <span className="text-white text-xs leading-none">✓</span>
               </div>
             )}
@@ -216,8 +217,8 @@ function SetupPhase() {
 
         {/* 4) Duración y Meta — siempre OK, mostrar valor */}
         <Link href="/game/duration" className="block h-full">
-          <PremiumCard className="relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 ring-2 ring-emerald-400/60 ring-offset-2 ring-offset-transparent border-emerald-400/30">
-            <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90 shadow-lg">
+          <PremiumCard className="relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 border-2 border-emerald-400/50">
+            <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90">
               <span className="text-white text-xs leading-none">✓</span>
             </div>
             <div className="flex flex-col items-center">
@@ -302,21 +303,15 @@ function SetupPhase() {
       </Dialog>
 
       {/* Fixed bottom CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto w-full left-0 right-0">
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 z-0">
-          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.92),rgba(0,0,0,0))]" />
-          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(255,255,255,0.06),rgba(255,255,255,0))]" />
-        </div>
-        <div className="relative z-10 px-4 pb-6 pt-10">
-          <Button
-            onClick={handleStart}
-            variant="primaryGlow"
-            size="premium"
-            className="w-full"
-          >
-            Iniciar juego
-          </Button>
-        </div>
+      <div className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto w-full px-4 pb-6 pt-4">
+        <Button
+          onClick={handleStart}
+          variant="primaryGlow"
+          size="premium"
+          className="w-full"
+        >
+          Iniciar juego
+        </Button>
       </div>
     </div>
   );
@@ -411,7 +406,7 @@ function RevealPhase() {
   };
 
   return (
-    <div className="w-full max-w-md relative overflow-hidden rounded-2xl border border-border/40 bg-card/70 backdrop-blur-xl shadow-xl p-6 transition-colors hover:border-primary/40">
+    <div className="w-full max-w-md relative overflow-hidden rounded-2xl border border-white/20 bg-card/70 backdrop-blur-xl p-6 transition-colors hover:border-primary/40">
       <div className="space-y-6">
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold">
@@ -579,12 +574,7 @@ function RevealPhase() {
           <Button
             onClick={handleNextPlayer}
             variant="default"
-            className={cn(
-              "w-full h-12 rounded-xl font-semibold transition-all active:scale-[0.98]",
-              isImpostor
-                ? "shadow-[0_0_0_1px_hsl(var(--impostor)/0.45),0_12px_40px_-18px_hsl(var(--impostor)/0.55)]"
-                : "shadow-[0_0_0_1px_hsl(var(--crew)/0.45),0_12px_40px_-18px_hsl(var(--crew)/0.55)]",
-            )}
+            className="w-full h-12 rounded-xl font-semibold transition-all active:scale-[0.98]"
           >
             Jugador siguiente
           </Button>
@@ -592,6 +582,228 @@ function RevealPhase() {
       </div>
     </div>
   );
+}
+
+/** Sonido corto "tick" con Web Audio API. */
+function playTickSound() {
+  if (typeof window === "undefined") return
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 880
+    osc.type = "sine"
+    gain.gain.setValueAtTime(0.15, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.08)
+  } catch {
+    // ignore if audio not allowed
+  }
+}
+
+/** Tick sutil (volumen bajo) para countdown "Expuesto". */
+function playTickSoundSubtle() {
+  if (typeof window === "undefined") return
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 660
+    osc.type = "sine"
+    gain.gain.setValueAtTime(0.06, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.06)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.06)
+  } catch {
+    // ignore if audio not allowed
+  }
+}
+
+function CountdownScreen() {
+  const phase = useGameStore((state) => state.phase)
+  const players = useGameStore((state) => state.players)
+  const advanceToDebate = useGameStore((state) => state.advanceToDebate)
+
+  const [count, setCount] = useState(3)
+  const hasPlayedTick = useRef(false)
+
+  const firstPlayer = useMemo(() => {
+    if (phase.type !== "play") return null
+    return players.find((p) => p.id === phase.firstPlayerId)
+  }, [phase, players])
+
+  useEffect(() => {
+    if (phase.type !== "play" || phase.playSubPhase !== "countdown") return
+    setCount(3)
+    hasPlayedTick.current = false
+  }, [phase.type, phase.playSubPhase])
+
+  useEffect(() => {
+    if (phase.type !== "play" || phase.playSubPhase !== "countdown") return
+    if (count <= 0) {
+      advanceToDebate()
+      return
+    }
+    if (!hasPlayedTick.current) {
+      hasPlayedTick.current = true
+      playTickSound()
+    }
+    const t = setTimeout(() => {
+      if (count - 1 <= 0) {
+        advanceToDebate()
+        return
+      }
+      playTickSound()
+      setCount((c) => c - 1)
+    }, 1000)
+    return () => clearTimeout(t)
+  }, [phase.type, phase.playSubPhase, count, advanceToDebate])
+
+  if (phase.type !== "play" || phase.playSubPhase !== "countdown") return null
+
+  return (
+    <div className="flex min-h-[70vh] flex-col items-center justify-center text-center px-4">
+      <p
+        className="text-lg font-semibold mb-2"
+        style={{ color: "hsl(50 100% 60%)" }}
+      >
+        {firstPlayer?.name ?? "Jugador"} empieza.
+      </p>
+      <p className="text-xl font-bold text-white mb-8">¡Prepárate!</p>
+      <motion.div
+        key={count}
+        initial={{ scale: 0.3, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 1.2, opacity: 0 }}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 15,
+        }}
+        className="text-[clamp(6rem,25vw,10rem)] font-black tabular-nums text-white leading-none"
+      >
+        {count > 0 ? count : ""}
+      </motion.div>
+    </div>
+  )
+}
+
+function DebateTimerScreen() {
+  const phase = useGameStore((state) => state.phase)
+  const settings = useGameStore((state) => state.settings)
+  const startVote = useGameStore((state) => state.startVote)
+  const roundSeconds = settings.roundSeconds
+
+  const [secondsLeft, setSecondsLeft] = useState(roundSeconds)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (phase.type !== "play" || phase.playSubPhase !== "debate") return
+    setSecondsLeft(roundSeconds)
+    intervalRef.current = setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          if (intervalRef.current) clearInterval(intervalRef.current)
+          startVote()
+          return 0
+        }
+        return s - 1
+      })
+    }, 1000)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
+  }, [phase.type, phase.playSubPhase, roundSeconds, startVote])
+
+  const displayMinutes = Math.floor(secondsLeft / 60)
+  const displaySeconds = secondsLeft % 60
+  const displayTime = `${displayMinutes}:${displaySeconds.toString().padStart(2, "0")}`
+  const progress = roundSeconds > 0 ? secondsLeft / roundSeconds : 0
+  const circumference = 2 * Math.PI * 90
+  const strokeDashoffset = circumference * (1 - progress)
+
+  if (phase.type !== "play" || phase.playSubPhase !== "debate") return null
+
+  return (
+    <div className="flex flex-col items-center text-center px-4 min-h-[70vh]">
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <MessageCircle className="size-8 text-white" strokeWidth={2} aria-hidden />
+        <h1 className="text-3xl font-bold text-white">Debate</h1>
+      </div>
+      <p className="text-white/90 text-sm max-w-sm mb-8">
+        Uno por uno, los jugadores dicen una palabra o frase relacionada con la palabra secreta.
+      </p>
+
+      <motion.div
+        className="relative flex items-center justify-center w-[220px] h-[220px] mb-6"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+      >
+        <svg
+          className="absolute inset-0 w-full h-full -rotate-90"
+          viewBox="0 0 200 200"
+          aria-hidden
+        >
+          <circle
+            cx="100"
+            cy="100"
+            r="90"
+            fill="none"
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth="12"
+          />
+          <motion.circle
+            cx="100"
+            cy="100"
+            r="90"
+            fill="none"
+            stroke="hsl(280 70% 75%)"
+            strokeWidth="12"
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+          />
+        </svg>
+        <span className="text-4xl font-bold tabular-nums text-white">
+          {displayTime}
+        </span>
+      </motion.div>
+
+      <p className="text-white/90 text-sm mb-8">
+        Pará el cronómetro cuando estén listos para votar.
+      </p>
+
+      <Button
+        onClick={startVote}
+        variant="primaryGlow"
+        size="lg"
+        className="w-full max-w-sm rounded-2xl py-6 text-lg font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-0"
+      >
+        Votar
+      </Button>
+    </div>
+  )
+}
+
+function PlayPhase() {
+  const phase = useGameStore((state) => state.phase)
+
+  if (phase.type !== "play") return null
+
+  return (
+    <>
+      {phase.playSubPhase === "countdown" && <CountdownScreen />}
+      {phase.playSubPhase === "debate" && <DebateTimerScreen />}
+    </>
+  )
 }
 
 function VotePhase() {
@@ -628,42 +840,70 @@ function VotePhase() {
 
   return (
     <>
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Votación</CardTitle>
-        <CardDescription>
+      <div className="w-full max-w-md flex flex-col items-center text-center">
+        <h1 className="text-3xl font-bold text-white mb-1">Votación</h1>
+        <p className="text-white/90 text-sm mb-6 max-w-sm">
           {maxVotes > 1
-            ? `Elegí hasta ${maxVotes} jugadores (máximo ${maxVotes} votos)`
-            : "Discutan y voten quién es el impostor"}
-        </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm font-medium text-muted-foreground">
+            ? `Elegí hasta ${maxVotes} jugadores (máximo ${maxVotes} votos).`
+            : "Discutí en grupo y decidí a quién quieren eliminar."}
+        </p>
+        {maxVotes > 1 && (
+          <p className="text-sm font-medium text-white/80 mb-4">
             Seleccionados: {selectedVoteIds.length}/{maxVotes}
           </p>
-          <div className="space-y-2">
-            {players.map((player) => {
-              const isSelected = selectedVoteIds.includes(player.id);
-              const atLimit = selectedVoteIds.length >= maxVotes;
-              const disabled = !isSelected && atLimit;
-              return (
-                <Button
-                  key={player.id}
-                  variant={isSelected ? "default" : "outline"}
-                  className="w-full justify-start"
-                  disabled={disabled}
-                  onClick={() => handleSelectVote(player.id)}
-                >
+        )}
+        <h2 className="text-xl font-bold text-white mb-6">
+          ¿Quién creen que es el Impostor?
+        </h2>
+
+        <div className="grid grid-cols-2 gap-3 w-full mb-8">
+          {players.map((player) => {
+            const isSelected = selectedVoteIds.includes(player.id);
+            const atLimit = selectedVoteIds.length >= maxVotes;
+            const disabled = !isSelected && atLimit;
+            return (
+              <button
+                key={player.id}
+                type="button"
+                disabled={disabled}
+                onClick={() => handleSelectVote(player.id)}
+                className={cn(
+                  "flex flex-col items-center justify-center rounded-2xl border-2 py-6 px-4 transition-all active:scale-[0.98]",
+                  "bg-card/90 border-white/20",
+                  isSelected &&
+                    "border-primary bg-primary/20",
+                  disabled && !isSelected && "opacity-60 cursor-not-allowed"
+                )}
+                aria-pressed={isSelected}
+                aria-label={`Votar a ${player.name}`}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white mb-3">
+                  {player.avatar ? (
+                    <Image
+                      src={player.avatar}
+                      alt=""
+                      width={48}
+                      height={48}
+                      className="rounded-full object-cover w-12 h-12"
+                    />
+                  ) : (
+                    <User className="size-8" aria-hidden />
+                  )}
+                </div>
+                <span className="text-base font-semibold text-white truncate w-full">
                   {player.name}
-                </Button>
-              );
-            })}
-          </div>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex flex-col gap-3 w-full">
           <div className="flex gap-2">
             <Button
               onClick={() => setGuessDialogOpen(true)}
               variant="outline"
-              className="flex-1"
+              className="flex-1 rounded-2xl border-white/30 bg-white/10 text-white hover:bg-white/20"
             >
               Adivinar palabra
             </Button>
@@ -673,14 +913,15 @@ function VotePhase() {
                 if (err) toast.error(err);
               }}
               disabled={selectedVoteIds.length !== maxVotes}
-              className="flex-1 shadow-lg active:scale-[0.98] transition-all duration-200"
+              variant="primaryGlow"
               size="lg"
+              className="w-full rounded-2xl py-6 text-lg font-semibold"
             >
               Confirmar voto
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <Dialog
         open={guessDialogOpen}
@@ -689,9 +930,9 @@ function VotePhase() {
           if (!open) setGuessInput("");
         }}
       >
-        <DialogContent className="max-w-md border-white/10 bg-zinc-900/95">
+        <DialogContent className="max-w-md border-primary/30 bg-card backdrop-blur-xl">
           <DialogHeader>
-            <DialogTitle className="text-zinc-50">Adivinar palabra</DialogTitle>
+            <DialogTitle className="text-white">Adivinar palabra</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <Input
@@ -701,14 +942,15 @@ function VotePhase() {
                 if (e.key === "Enter") handleGuessConfirm();
               }}
               placeholder="Escribí la palabra"
-              className="bg-white/5 border-white/10 text-zinc-50 placeholder:text-zinc-500"
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
               autoFocus
               aria-label="Palabra a adivinar"
             />
             <Button
               onClick={handleGuessConfirm}
               disabled={!guessInput.trim()}
-              className="w-full"
+              variant="accent"
+              className="w-full rounded-2xl"
             >
               Confirmar
             </Button>
@@ -717,6 +959,81 @@ function VotePhase() {
       </Dialog>
     </>
   );
+}
+
+function ResultCountdownScreen() {
+  const phase = useGameStore((state) => state.phase)
+  const advanceToResult = useGameStore((state) => state.advanceToResult)
+
+  const [count, setCount] = useState(3)
+  const hasPlayedTick = useRef(false)
+
+  useEffect(() => {
+    if (phase.type !== "result_countdown") return
+    setCount(3)
+    hasPlayedTick.current = false
+  }, [phase.type])
+
+  useEffect(() => {
+    if (phase.type !== "result_countdown") return
+    if (count <= 0) {
+      const t = setTimeout(() => advanceToResult(), 500)
+      return () => clearTimeout(t)
+    }
+    if (!hasPlayedTick.current) {
+      hasPlayedTick.current = true
+      playTickSoundSubtle()
+    }
+    const t = setTimeout(() => {
+      if (count - 1 <= 0) {
+        playTickSoundSubtle()
+        setCount(0)
+        return
+      }
+      playTickSoundSubtle()
+      setCount((c) => c - 1)
+    }, 1000)
+    return () => clearTimeout(t)
+  }, [phase.type, count, advanceToResult])
+
+  if (phase.type !== "result_countdown") return null
+
+  return (
+    <div className="flex min-h-[75vh] flex-col items-center justify-center text-center px-4">
+      <motion.div
+        className="mb-8 text-6xl sm:text-7xl"
+        animate={{ x: [-10, 10, -10] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+        aria-hidden
+      >
+        👀
+      </motion.div>
+      <h2 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+        Expuesto
+      </h2>
+      <p className="text-xl text-white/95 mb-6">
+        en 3, 2, 1...
+      </p>
+      <AnimatePresence mode="wait">
+        {count > 0 && (
+          <motion.div
+            key={count}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1.2, opacity: 1 }}
+            exit={{ scale: 0.8, opacity: 0 }}
+            transition={{
+              type: "spring",
+              stiffness: 400,
+              damping: 18,
+            }}
+            className="text-[clamp(5rem,22vw,9rem)] font-black tabular-nums text-white leading-none"
+          >
+            {count}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
 }
 
 function ResultPhase() {
@@ -731,57 +1048,71 @@ function ResultPhase() {
   const impostors = players.filter((p) => phase.impostorIds.includes(p.id));
   const isCrewWin = phase.winner === "crew";
 
+  const impostorNames =
+    impostors.length === 1
+      ? impostors[0]?.name ?? ""
+      : impostors.map((p) => p.name).join(", ");
+
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle>
-          {isCrewWin ? "🎉 ¡Tripulación gana!" : "🕵️ ¡Impostor gana!"}
-        </CardTitle>
-        <CardDescription>Resultado de la partida</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2 rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">
-            {impostors.length === 1
-              ? "El impostor era:"
-              : "Los impostores eran:"}
-          </p>
-          {impostors.length === 1 ? (
-            <p className="text-xl font-bold">{impostors[0]?.name}</p>
-          ) : (
-            <ul className="list-disc list-inside space-y-1 text-xl font-bold">
-              {impostors.map((p) => (
-                <li key={p.id}>{p.name}</li>
-              ))}
-            </ul>
-          )}
+    <div className="w-full max-w-md flex flex-col items-center text-center">
+      <div className="relative w-full max-w-[200px] mx-auto mb-6 flex justify-center">
+        <Image
+          src={isCrewWin ? "/justicia.png" : "/jocker.png"}
+          alt=""
+          width={200}
+          height={200}
+          className="object-contain w-full h-auto max-h-[180px]"
+          priority
+          aria-hidden
+        />
+      </div>
+      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+        {isCrewWin ? "¡Has pillado a un Impostor!" : "¡El Impostor gana!"}
+      </h1>
+      <p className="text-white/90 text-sm mb-8">
+        {isCrewWin
+          ? "¡Victoria! Ganan los Civiles."
+          : "El Impostor se impuso. ¡A revancha!"}
+      </p>
+
+      <div className="w-full rounded-3xl bg-card/95 border border-white/20 overflow-hidden mb-8">
+        <div className="px-6 py-5 border-b border-white/20">
+          <p className="text-sm text-white/80">Palabra secreta</p>
+          <p className="text-xl font-bold text-white mt-1">{phase.secretWord}</p>
         </div>
-        <div className="space-y-2 rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">
-            La palabra secreta era:
-          </p>
-          <p className="text-xl font-bold">{phase.secretWord}</p>
+        <div className="px-6 py-5">
+          <p className="text-sm text-white/80">Impostor{impostors.length > 1 ? "es" : ""}</p>
+          <p className="text-xl font-bold text-white mt-1">{impostorNames}</p>
         </div>
-        <div className="flex flex-col gap-2">
+      </div>
+
+      <div className="flex flex-col gap-3 w-full">
+        <Button
+          variant="accent"
+          size="lg"
+          className="w-full rounded-2xl py-6 text-lg font-semibold"
+          onClick={() => router.push("/game/score")}
+        >
+          Continuar
+        </Button>
+        <div className="flex gap-2">
           <Button
-            variant="primaryGlow"
-            size="premium"
-            className="w-full"
-            onClick={() => router.push("/game/score")}
+            onClick={resetAll}
+            variant="outline"
+            className="flex-1 rounded-2xl border-white/30 bg-white/10 text-white hover:bg-white/20"
           >
-            Continuar
+            Nueva partida
           </Button>
-          <div className="flex gap-2">
-            <Button onClick={resetAll} variant="outline" className="flex-1">
-              Nueva partida
-            </Button>
-            <Button onClick={resetRound} className="flex-1">
-              Revancha
-            </Button>
-          </div>
+          <Button
+            onClick={resetRound}
+            variant="secondary"
+            className="flex-1 rounded-2xl"
+          >
+            Revancha
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -846,7 +1177,7 @@ function ScorePhase() {
             {sortedPlayers.map((player, index) => (
               <li
                 key={player.id}
-                className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                className="flex items-center gap-4 rounded-xl border border-primary/30 bg-gradient-to-br from-card to-card/50 px-4 py-3 transition-colors hover:border-primary/60"
               >
                 <span className="w-6 text-center text-sm font-semibold text-zinc-500">
                   {index + 1}°
@@ -907,7 +1238,9 @@ export default function GamePage() {
     <div className="w-full">
       {phase.type === "setup" && <SetupPhase />}
       {phase.type === "reveal" && <RevealPhase />}
+      {phase.type === "play" && <PlayPhase />}
       {phase.type === "vote" && <VotePhase />}
+      {phase.type === "result_countdown" && <ResultCountdownScreen />}
       {phase.type === "result" && <ResultPhase />}
       {phase.type === "score" && <ScorePhase />}
     </div>

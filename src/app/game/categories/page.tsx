@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button"
 import { PremiumCard } from "@/components/ui/premium-card"
 import { cn } from "@/lib/utils"
 
+/**
+ * Página de configuración de categorías del juego.
+ * Muestra la lista de categorías disponibles, permite marcar/desmarcar y persistir
+ * la selección en el store. No recibe props. Devuelve el árbol JSX de la vista.
+ */
 export default function CategoriesPage() {
   const router = useRouter()
   const categoryIds = useGameStore((state) => state.settings.categoryIds)
@@ -15,6 +20,7 @@ export default function CategoriesPage() {
   const selectAllCategories = useGameStore((state) => state.selectAllCategories)
   const clearCategories = useGameStore((state) => state.clearCategories)
 
+  /** Navega a /game sin validar cantidad de categorías. No recibe ni devuelve nada. */
   const handleSave = () => {
     router.push("/game")
   }
@@ -62,6 +68,7 @@ export default function CategoriesPage() {
               <div className="grid grid-cols-2 gap-4">
                 {GAME_CATEGORIES.map((cat) => {
                   const isSelected = categoryIds.includes(cat.id)
+                  // Clases Tailwind de gradiente por categoría; fallback gris si no hay entrada.
                   const gradientMap: Record<string, string> = {
                     anime: "from-purple-600 to-indigo-700",
                     arg_futbol_78: "from-orange-500 to-amber-400",
@@ -80,11 +87,11 @@ export default function CategoriesPage() {
                       type="button"
                       onClick={() => toggleCategory(cat.id)}
                       className={cn(
-                        "relative rounded-2xl p-5 border shadow-lg transition-all",
+                        "relative rounded-2xl p-5 border transition-all",
                         `bg-gradient-to-br ${gradient}`,
                         isSelected
-                          ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-transparent border-emerald-400/50"
-                          : "border-white/10",
+                          ? "border-2 border-emerald-400/50"
+                          : "border-white/20",
                         "hover:scale-[1.02] active:scale-[0.98]"
                       )}
                     >
@@ -93,7 +100,7 @@ export default function CategoriesPage() {
                         <span className="text-sm font-medium text-white">{cat.label}</span>
                       </div>
                       {isSelected && (
-                        <div className="absolute top-2 right-2 bg-emerald-400 rounded-full w-6 h-6 flex items-center justify-center shadow-lg">
+                        <div className="absolute top-2 right-2 bg-emerald-400 rounded-full w-6 h-6 flex items-center justify-center">
                           <span className="text-white text-xs leading-none">✓</span>
                         </div>
                       )}
@@ -112,7 +119,7 @@ export default function CategoriesPage() {
         </div>
 
         {/* Fixed bottom button */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[linear-gradient(to_top,rgba(0,0,0,0.75),rgba(0,0,0,0))] backdrop-blur-md px-4 pt-4 pb-6">
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pt-4 pb-6">
           <Button
             onClick={handleSave}
             variant="primaryGlow"

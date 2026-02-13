@@ -1,9 +1,9 @@
 /**
- * Picks a random element from an array.
- * @param arr - The array to pick from (must not be empty)
- * @param rng - Optional random number generator (defaults to Math.random)
- * @returns A random element from the array
- * @throws Error if the array is empty
+ * Elige un elemento al azar del array.
+ * @param arr - Array del que elegir (no debe estar vacío)
+ * @param rng - Generador de números aleatorios opcional (por defecto Math.random)
+ * @returns Un elemento aleatorio del array
+ * @throws Error si el array está vacío
  */
 export function pickRandom<T>(arr: readonly T[], rng: () => number = Math.random): T {
   if (arr.length === 0) {
@@ -14,11 +14,11 @@ export function pickRandom<T>(arr: readonly T[], rng: () => number = Math.random
 }
 
 /**
- * Shuffles an array using the Fisher-Yates algorithm.
- * Returns a new array without mutating the input.
- * @param arr - The array to shuffle
- * @param rng - Optional random number generator (defaults to Math.random)
- * @returns A new shuffled array
+ * Baraja el array con el algoritmo Fisher-Yates.
+ * Devuelve un array nuevo sin modificar el original.
+ * @param arr - Array a barajar
+ * @param rng - Generador de números aleatorios opcional (por defecto Math.random)
+ * @returns Nuevo array barajado
  */
 export function shuffle<T>(arr: readonly T[], rng: () => number = Math.random): T[] {
   const result = [...arr]
@@ -30,11 +30,11 @@ export function shuffle<T>(arr: readonly T[], rng: () => number = Math.random): 
 }
 
 /**
- * Picks `count` unique random elements from an array (no repetition).
- * @param arr - The array to pick from
- * @param count - Number of elements to pick (must be >= 0 and <= arr.length)
- * @param rng - Optional random number generator
- * @returns New array of length `count` with unique elements
+ * Elige `count` elementos aleatorios distintos del array (sin repetición).
+ * @param arr - Array del que elegir
+ * @param count - Cantidad de elementos a elegir (debe ser >= 0 y <= arr.length)
+ * @param rng - Generador de números aleatorios opcional
+ * @returns Nuevo array de longitud `count` con elementos únicos
  */
 export function pickRandomUnique<T>(
   arr: readonly T[],

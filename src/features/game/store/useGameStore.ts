@@ -37,6 +37,8 @@ interface GameState {
   gameOver: boolean
   /** Player ids that reached winningScore (winners; can be multiple on tie). */
   winnerPlayerIds: string[]
+  /** Primer jugador en turno esta ronda (quien empieza el debate). Se setea en createGame. */
+  firstPlayerIdForRound: string | null
 }
 
 interface GameActions {
@@ -50,10 +52,16 @@ interface GameActions {
   isCategorySelected: (categoryId: CategoryId) => boolean
   createGame: () => string | null
   revealNext: () => void
+  /** Pasar del countdown al debate (fase play). */
+  advanceToDebate: () => void
+  /** Pasar del debate a la votación (desde botón "Votar" o timer en 0). */
+  startVote: () => void
   /** Toggle vote for playerId. Returns error message (e.g. "Máximo X votos") or null on success. */
   selectVote: (playerId: string) => string | null
   /** Returns error message for toast (e.g. "Tenés que elegir X jugadores") or null on success. */
   confirmVote: () => string | null
+  /** Pasar de result_countdown a result (tras el countdown "Expuesto"). */
+  advanceToResult: () => void
   /** If guess matches secretWord (case-insensitive, trim), ends round and impostor wins. */
   impostorGuessWord: (guess: string) => boolean
   /** Transition from result to score phase (puntajes). */
@@ -89,6 +97,7 @@ const initialState: GameState = {
   lastRoundResult: null,
   gameOver: false,
   winnerPlayerIds: [],
+  firstPlayerIdForRound: null,
 }
 
 export const useGameStore = create<GameState & GameActions>((set, get) => ({
@@ -358,6 +367,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       roundNumber: nextRoundNumber,
       gameOver: false,
       winnerPlayerIds: [],
+      firstPlayerIdForRound: firstPlayerId,
     })
 
     return null
@@ -370,12 +380,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }
 
     const { remainingPlayerIds } = state.phase
+    const firstPlayerIdForRound = state.firstPlayerIdForRound ?? ""
 
     if (remainingPlayerIds.length === 0) {
       set({
         phase: {
-          type: "vote",
-          selectedVoteIds: [],
+          type: "play",
+          playSubPhase: "countdown",
+          firstPlayerId: firstPlayerIdForRound,
         },
       })
     } else {
@@ -388,6 +400,28 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
         },
       })
     }
+  },
+
+  advanceToDebate: () => {
+    const state = get()
+    if (state.phase.type !== "play") return
+    set({
+      phase: {
+        ...state.phase,
+        playSubPhase: "debate",
+      },
+    })
+  },
+
+  startVote: () => {
+    const state = get()
+    if (state.phase.type !== "play") return
+    set({
+      phase: {
+        type: "vote",
+        selectedVoteIds: [],
+      },
+    })
   },
 
   selectVote: (playerId: string): string | null => {
@@ -486,7 +520,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
 
     set({
       phase: {
-        type: "result",
+        type: "result_countdown",
         winner,
         impostorIds,
         secretWord,
@@ -497,6 +531,20 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       winnerPlayerIds,
     })
     return null
+  },
+
+  advanceToResult: () => {
+    const state = get()
+    if (state.phase.type !== "result_countdown") return
+    const { winner, impostorIds, secretWord } = state.phase
+    set({
+      phase: {
+        type: "result",
+        winner,
+        impostorIds,
+        secretWord,
+      },
+    })
   },
 
   impostorGuessWord: (guess: string) => {
@@ -610,6 +658,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       lastRoundResult: null,
       gameOver: false,
       winnerPlayerIds: [],
+      firstPlayerIdForRound: null,
     })
   },
 
@@ -625,6 +674,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       lastRoundResult: null,
       gameOver: false,
       winnerPlayerIds: [],
+      firstPlayerIdForRound: null,
       // Preserve players and settings
       players: state.players,
       settings: state.settings,
@@ -643,6 +693,7 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
       lastRoundResult: null,
       gameOver: false,
       winnerPlayerIds: [],
+      firstPlayerIdForRound: null,
     })
   },
 }))

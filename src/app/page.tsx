@@ -5,8 +5,8 @@ import { APP_NAME } from "@/lib/constants"
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="flex w-full flex-col items-center gap-8 text-center">
+    <div className="flex min-h-screen items-center justify-center shadow-none">
+      <div className="flex w-full flex-col items-center gap-8 text-center shadow-none">
         <Image
           src="/impostor.png"
           alt="Detective"

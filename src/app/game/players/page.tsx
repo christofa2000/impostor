@@ -142,7 +142,7 @@ export default function PlayersPage() {
                 {localPlayers.map((player, index) => (
                   <div
                     key={player.id}
-                    className="flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-4 py-3"
+                    className="flex items-center justify-between rounded-xl border border-primary/30 bg-gradient-to-br from-card to-card/50 px-4 py-3 transition-colors hover:border-primary/60"
                   >
                     <Input
                       placeholder="Nombre del jugador"
@@ -194,7 +194,7 @@ export default function PlayersPage() {
         </div>
 
         {/* Fixed bottom button */}
-        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[linear-gradient(to_top,rgba(0,0,0,0.75),rgba(0,0,0,0))] backdrop-blur-md px-4 pt-4 pb-6">
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pt-4 pb-6">
           <Button
             onClick={handleSave}
             variant="primaryGlow"
@@ -218,10 +218,10 @@ export default function PlayersPage() {
                 <button
                   key={avatarSrc}
                   onClick={() => handleAvatarSelect(avatarSrc)}
-                  className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
-                    selectedPlayer?.avatar === avatarSrc
-                      ? "border-primary ring-2 ring-primary/20"
-                      : "border-border hover:border-primary/50"
+className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedPlayer?.avatar === avatarSrc
+                      ? "border-primary"
+                      : "border-white/20 hover:border-primary/50"
                   }`}
                 >
                   <Image

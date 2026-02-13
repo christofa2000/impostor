@@ -114,7 +114,7 @@ export default function ScorePage() {
 
       <div className="flex flex-1 flex-col gap-6 pb-28">
         {gameOver && winnerPlayers.length > 0 && (
-          <Card className="w-full border-amber-400/30 bg-amber-500/10 backdrop-blur-xl shadow-[0_0_60px_rgba(0,0,0,0.3)]">
+          <Card className="w-full border-amber-400/30 bg-amber-500/10 backdrop-blur-xl">
             <CardHeader>
               <CardTitle className="text-amber-400">🏆 Ganador/es</CardTitle>
               <CardDescription className="text-zinc-400">
@@ -126,7 +126,7 @@ export default function ScorePage() {
                 {winnerPlayers.map((player) => (
                   <li
                     key={player.id}
-                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-2"
+                    className="flex items-center gap-3 rounded-xl border border-primary/30 bg-gradient-to-br from-card to-card/50 px-4 py-2 transition-colors hover:border-primary/60"
                   >
                     {player.avatar ? (
                       <Image
@@ -152,7 +152,7 @@ export default function ScorePage() {
           </Card>
         )}
 
-        <Card className="w-full border-white/10 bg-white/5 backdrop-blur-xl shadow-[0_0_60px_rgba(0,0,0,0.3)]">
+        <Card className="w-full border-white/20 bg-white/5 backdrop-blur-xl">
           <CardHeader>
             <CardTitle className="text-zinc-50">Resultado de la ronda</CardTitle>
             <CardDescription className="text-zinc-400">
@@ -182,7 +182,7 @@ export default function ScorePage() {
             {sortedPlayers.map((player, index) => (
               <li
                 key={player.id}
-                className="flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                className="flex items-center gap-4 rounded-xl border border-primary/30 bg-gradient-to-br from-card to-card/50 px-4 py-3 transition-colors hover:border-primary/60"
               >
                 <span className="w-6 text-center text-sm font-semibold text-zinc-500">
                   {index + 1}°
@@ -213,7 +213,7 @@ export default function ScorePage() {
           </ul>
         </PremiumCard>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 shadow-none">
           {!gameOver && (
             <Button
               variant="primaryGlow"

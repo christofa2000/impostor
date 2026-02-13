@@ -30,6 +30,16 @@ Rules:
 - Avoid heavyweight state machines libs; implement explicit phases in store.
 - No inline styles. No CSS-in-JS. Tailwind only.
 
+- Todos los comentarios deben escribirse en castellano.
+- Cada función debe incluir un comentario explicando:
+  - Qué hace
+  - Qué parámetros recibe
+  - Qué retorna
+- No escribir comentarios innecesarios.
+- Mantener comentarios claros, técnicos y concisos.
+- No eliminar comentarios existentes en castellano.
+
+
 =============================================================================== 3) PROJECT STRUCTURE (NON-NEGOTIABLE)
 ===============================================================================
 Use this structure:
