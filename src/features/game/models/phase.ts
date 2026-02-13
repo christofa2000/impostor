@@ -10,8 +10,8 @@ export type GamePhase =
   | {
       type: "play"
       playSubPhase: PlaySubPhase
-      /** Id del primer jugador en turno (quien empieza el debate). */
-      firstPlayerId: string
+      currentPlayerIndex: number
+      remainingSeconds: number
     }
   | {
       type: "vote"

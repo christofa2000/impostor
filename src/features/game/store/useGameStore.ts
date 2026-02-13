@@ -380,14 +380,14 @@ export const useGameStore = create<GameState & GameActions>((set, get) => ({
     }
 
     const { remainingPlayerIds } = state.phase
-    const firstPlayerIdForRound = state.firstPlayerIdForRound ?? ""
 
     if (remainingPlayerIds.length === 0) {
       set({
         phase: {
           type: "play",
           playSubPhase: "countdown",
-          firstPlayerId: firstPlayerIdForRound,
+          currentPlayerIndex: 0,
+          remainingSeconds: get().settings.roundSeconds,
         },
       })
     } else {

@@ -25,6 +25,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Confetti from "react-confetti";
 import { toast } from "sonner";
 import { MessageCircle, User } from "lucide-react";
 
@@ -624,9 +625,86 @@ function playTickSoundSubtle() {
   }
 }
 
+/** Sonido de aplausos (archivo o generado con Web Audio API). */
+function playApplause() {
+  if (typeof window === "undefined") return
+  try {
+    const audio = new Audio("/sounds/applause.mp3")
+    audio.volume = 0.5
+    audio.play().catch(() => playApplauseGenerated())
+  } catch {
+    playApplauseGenerated()
+  }
+}
+
+function playApplauseGenerated() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+    const duration = 1.8
+    const bufferSize = ctx.sampleRate * duration
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < bufferSize; i++) {
+      const t = i / ctx.sampleRate
+      const envelope = Math.exp(-t * 2) * (0.3 + 0.7 * Math.max(0, 1 - t / 0.4))
+      data[i] = (Math.random() * 2 - 1) * envelope
+    }
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.connect(ctx.destination)
+    source.start()
+  } catch {
+    // ignore
+  }
+}
+
+/** Sonido de vidrio rompiéndose (archivo o generado). */
+function playGlassBreak() {
+  if (typeof window === "undefined") return
+  try {
+    const audio = new Audio("/sounds/glass-break.mp3")
+    audio.volume = 0.6
+    audio.play().catch(() => playGlassBreakGenerated())
+  } catch {
+    playGlassBreakGenerated()
+  }
+}
+
+function playGlassBreakGenerated() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+    const duration = 0.4
+    const bufferSize = ctx.sampleRate * duration
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+    const data = buffer.getChannelData(0)
+    for (let i = 0; i < bufferSize; i++) {
+      const t = i / ctx.sampleRate
+      const envelope = Math.exp(-t * 12)
+      data[i] = (Math.random() * 2 - 1) * envelope
+    }
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    source.connect(ctx.destination)
+    source.start()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 2800
+    osc.type = "sine"
+    gain.gain.setValueAtTime(0.15, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.15)
+  } catch {
+    // ignore
+  }
+}
+
 function CountdownScreen() {
   const phase = useGameStore((state) => state.phase)
   const players = useGameStore((state) => state.players)
+  const firstPlayerIdForRound = useGameStore((state) => state.firstPlayerIdForRound)
   const advanceToDebate = useGameStore((state) => state.advanceToDebate)
 
   const [count, setCount] = useState(3)
@@ -634,14 +712,14 @@ function CountdownScreen() {
 
   const firstPlayer = useMemo(() => {
     if (phase.type !== "play") return null
-    return players.find((p) => p.id === phase.firstPlayerId)
-  }, [phase, players])
+    return players.find((p) => p.id === firstPlayerIdForRound)
+  }, [phase, players, firstPlayerIdForRound])
 
   useEffect(() => {
     if (phase.type !== "play" || phase.playSubPhase !== "countdown") return
     setCount(3)
     hasPlayedTick.current = false
-  }, [phase.type, phase.playSubPhase])
+  }, [phase])
 
   useEffect(() => {
     if (phase.type !== "play" || phase.playSubPhase !== "countdown") return
@@ -662,7 +740,7 @@ function CountdownScreen() {
       setCount((c) => c - 1)
     }, 1000)
     return () => clearTimeout(t)
-  }, [phase.type, phase.playSubPhase, count, advanceToDebate])
+  }, [phase, count, advanceToDebate])
 
   if (phase.type !== "play" || phase.playSubPhase !== "countdown") return null
 
@@ -718,7 +796,7 @@ function DebateTimerScreen() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [phase.type, phase.playSubPhase, roundSeconds, startVote])
+  }, [phase, roundSeconds, startVote])
 
   const displayMinutes = Math.floor(secondsLeft / 60)
   const displaySeconds = secondsLeft % 60
@@ -1036,12 +1114,92 @@ function ResultCountdownScreen() {
   )
 }
 
+/** Efecto visual de vidrio roto / impacto cuando gana el impostor. */
+function GlassBreakEffect() {
+  const cracks = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) => {
+        const angle = (i / 12) * Math.PI * 2 + Math.random() * 0.5
+        const len = 0.4 + Math.random() * 0.5
+        const x2 = 50 + Math.cos(angle) * len * 100
+        const y2 = 50 + Math.sin(angle) * len * 100
+        return {
+          d: `M 50 50 L ${x2} ${y2}`,
+          delay: i * 0.03,
+        }
+      }),
+    []
+  )
+
+  return (
+    <motion.div
+      className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{
+        opacity: [0, 0.9, 0.7],
+        scale: [0.95, 1.02, 1],
+      }}
+      transition={{ duration: 0.5 }}
+    >
+      <motion.div
+        className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(10_100%_60%_/_0.25)_0%,transparent_60%)]"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+      />
+      <svg
+        className="absolute inset-0 w-full h-full opacity-70"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+      >
+        {cracks.map((c, i) => (
+          <motion.path
+            key={i}
+            d={c.d}
+            fill="none"
+            stroke="rgba(255,255,255,0.6)"
+            strokeWidth="0.4"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{
+              duration: 0.35,
+              delay: c.delay,
+              ease: "easeOut",
+            }}
+          />
+        ))}
+      </svg>
+    </motion.div>
+  )
+}
+
 function ResultPhase() {
   const router = useRouter();
   const phase = useGameStore((state) => state.phase);
   const players = useGameStore((state) => state.players);
   const resetRound = useGameStore((state) => state.resetRound);
   const resetAll = useGameStore((state) => state.resetAll);
+
+  const [showEffects, setShowEffects] = useState(true);
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+  }, []);
+
+  useEffect(() => {
+    if (phase.type !== "result") return;
+    if (phase.winner === "crew") {
+      playApplause();
+    } else {
+      playGlassBreak();
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate([100, 50, 100]);
+      }
+    }
+    const timer = setTimeout(() => setShowEffects(false), 4000);
+    return () => clearTimeout(timer);
+  }, [phase]);
 
   if (phase.type !== "result") return null;
 
@@ -1054,64 +1212,95 @@ function ResultPhase() {
       : impostors.map((p) => p.name).join(", ");
 
   return (
-    <div className="w-full max-w-md flex flex-col items-center text-center">
-      <div className="relative w-full max-w-[200px] mx-auto mb-6 flex justify-center">
-        <Image
-          src={isCrewWin ? "/justicia.png" : "/jocker.png"}
-          alt=""
-          width={200}
-          height={200}
-          className="object-contain w-full h-auto max-h-[180px]"
-          priority
-          aria-hidden
+    <div className="relative w-full">
+      {/* Efecto tripulación gana: confeti */}
+      {showEffects && isCrewWin && windowSize.width > 0 && (
+        <Confetti
+          width={windowSize.width}
+          height={windowSize.height}
+          numberOfPieces={200}
+          recycle={false}
+          colors={["#00E5FF", "#00FF88", "#FFD700"]}
+          initialVelocityY={20}
+          gravity={0.3}
         />
-      </div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
-        {isCrewWin ? "¡Has pillado a un Impostor!" : "¡El Impostor gana!"}
-      </h1>
-      <p className="text-white/90 text-sm mb-8">
-        {isCrewWin
-          ? "¡Victoria! Ganan los Civiles."
-          : "El Impostor se impuso. ¡A revancha!"}
-      </p>
+      )}
 
-      <div className="w-full rounded-3xl bg-card/95 border border-white/20 overflow-hidden mb-8">
-        <div className="px-6 py-5 border-b border-white/20">
-          <p className="text-sm text-white/80">Palabra secreta</p>
-          <p className="text-xl font-bold text-white mt-1">{phase.secretWord}</p>
-        </div>
-        <div className="px-6 py-5">
-          <p className="text-sm text-white/80">Impostor{impostors.length > 1 ? "es" : ""}</p>
-          <p className="text-xl font-bold text-white mt-1">{impostorNames}</p>
-        </div>
-      </div>
+      {/* Efecto impostor gana: vidrio roto + shake en el contenido */}
+      {showEffects && !isCrewWin && <GlassBreakEffect />}
 
-      <div className="flex flex-col gap-3 w-full">
-        <Button
-          variant="accent"
-          size="lg"
-          className="w-full rounded-2xl py-6 text-lg font-semibold"
-          onClick={() => router.push("/game/score")}
-        >
-          Continuar
-        </Button>
-        <div className="flex gap-2">
-          <Button
-            onClick={resetAll}
-            variant="outline"
-            className="flex-1 rounded-2xl border-white/30 bg-white/10 text-white hover:bg-white/20"
-          >
-            Nueva partida
-          </Button>
-          <Button
-            onClick={resetRound}
-            variant="secondary"
-            className="flex-1 rounded-2xl"
-          >
-            Revancha
-          </Button>
+      <motion.div
+        className="w-full max-w-md flex flex-col items-center text-center"
+        animate={
+          showEffects && !isCrewWin
+            ? {
+                x: [0, -6, 6, -4, 4, -2, 2, 0],
+              }
+            : undefined
+        }
+        transition={{
+          duration: 0.5,
+          ease: "easeOut",
+        }}
+      >
+        <div className="relative w-full max-w-[200px] mx-auto mb-6 flex justify-center">
+          <Image
+            src={isCrewWin ? "/justicia.png" : "/jocker.png"}
+            alt=""
+            width={200}
+            height={200}
+            className="object-contain w-full h-auto max-h-[180px]"
+            priority
+            aria-hidden
+          />
         </div>
-      </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+          {isCrewWin ? "¡Has pillado a un Impostor!" : "¡El Impostor gana!"}
+        </h1>
+        <p className="text-white/90 text-sm mb-8">
+          {isCrewWin
+            ? "¡Victoria! Ganan los Civiles."
+            : "El Impostor se impuso. ¡A revancha!"}
+        </p>
+
+        <div className="w-full rounded-3xl bg-card/95 border border-white/20 overflow-hidden mb-8">
+          <div className="px-6 py-5 border-b border-white/20">
+            <p className="text-sm text-white/80">Palabra secreta</p>
+            <p className="text-xl font-bold text-white mt-1">{phase.secretWord}</p>
+          </div>
+          <div className="px-6 py-5">
+            <p className="text-sm text-white/80">Impostor{impostors.length > 1 ? "es" : ""}</p>
+            <p className="text-xl font-bold text-white mt-1">{impostorNames}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 w-full">
+          <Button
+            variant="accent"
+            size="lg"
+            className="w-full rounded-2xl py-6 text-lg font-semibold"
+            onClick={() => router.push("/game/score")}
+          >
+            Continuar
+          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={resetAll}
+              variant="outline"
+              className="flex-1 rounded-2xl border-white/30 bg-white/10 text-white hover:bg-white/20"
+            >
+              Nueva partida
+            </Button>
+            <Button
+              onClick={resetRound}
+              variant="secondary"
+              className="flex-1 rounded-2xl"
+            >
+              Revancha
+            </Button>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
