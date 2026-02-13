@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import type { GameSettings } from "@/features/game/models/settings";
 import { useGameStore } from "@/features/game/store/useGameStore";
+import { getAvatarObjectPosition } from "@/data/avatars";
 import { MIN_PLAYERS } from "@/lib/constants";
 import { PremiumCard } from "@/components/ui/premium-card";
 import { cn } from "@/lib/utils";
@@ -453,7 +454,7 @@ function RevealPhase() {
                     alt={currentPlayer.name ?? "Avatar"}
                     width={96}
                     height={96}
-                    className="rounded-full object-cover"
+                    className={cn("rounded-full object-cover", getAvatarObjectPosition(currentPlayer.avatar))}
                   />
                 ) : (
                   <span className="text-4xl">
@@ -533,7 +534,7 @@ function RevealPhase() {
                   src={currentPlayer.avatar}
                   alt={currentPlayer.name ?? "Avatar"}
                   fill
-                  className="object-cover"
+                  className={cn("object-cover", getAvatarObjectPosition(currentPlayer.avatar))}
                   priority
                 />
               ) : (
@@ -929,24 +930,26 @@ function VotePhase() {
 
   return (
     <>
-      <div className="w-full max-w-md min-h-[100dvh] flex flex-col px-3 sm:px-0">
-        <div className="flex-1 flex flex-col min-h-0 overflow-y-auto items-center text-center">
-          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Votación</h1>
-          <p className="text-white/90 text-sm mb-4 max-w-sm">
+      <div className="w-full max-w-md h-[100dvh] overflow-hidden flex flex-col px-3 sm:px-0">
+        <div className="flex-shrink-0 flex flex-col items-center text-center gap-2 pt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Votación</h1>
+          <p className="text-white/90 text-sm max-w-sm">
             {maxVotes > 1
               ? `Elegí hasta ${maxVotes} jugadores (máximo ${maxVotes} votos).`
               : "Discutí en grupo y decidí a quién quieren eliminar."}
           </p>
           {maxVotes > 1 && (
-            <p className="text-sm font-medium text-white/80 mb-3">
+            <p className="text-sm font-medium text-white/80">
               Seleccionados: {selectedVoteIds.length}/{maxVotes}
             </p>
           )}
-          <h2 className="text-lg sm:text-xl font-bold text-white mb-4">
+          <h2 className="text-lg sm:text-xl font-bold text-white">
             ¿Quién creen que es el Impostor?
           </h2>
+        </div>
 
-          <div className="grid grid-cols-2 gap-2.5 w-full mb-6">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <div className="grid grid-cols-2 gap-2.5 w-full min-h-0 flex-1 content-start">
             {players.map((player) => {
               const isSelected = selectedVoteIds.includes(player.id);
               const atLimit = selectedVoteIds.length >= maxVotes;
@@ -974,7 +977,7 @@ function VotePhase() {
                         alt=""
                         width={40}
                         height={40}
-                        className="rounded-full object-cover size-10"
+                        className={cn("rounded-full object-cover size-10", getAvatarObjectPosition(player.avatar))}
                       />
                     ) : (
                       <User className="size-5" aria-hidden />
@@ -989,7 +992,7 @@ function VotePhase() {
           </div>
         </div>
 
-        <div className="flex flex-col flex-shrink-0 w-full px-6 pt-10 pb-[calc(2.5rem+env(safe-area-inset-bottom))] space-y-4">
+        <div className="flex flex-col flex-shrink-0 w-full px-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] gap-3">
           <Button
             onClick={() => {
               const err = confirmVote();
@@ -1223,7 +1226,7 @@ function ResultPhase() {
       : impostors.map((p) => p.name).join(", ");
 
   return (
-    <div className="relative w-full min-h-[100dvh] flex flex-col">
+    <div className="relative w-full h-[100dvh] overflow-hidden flex flex-col">
       {/* Efecto tripulación gana: confeti */}
       {showEffects && isCrewWin && windowSize.width > 0 && (
         <Confetti
@@ -1240,9 +1243,9 @@ function ResultPhase() {
       {/* Efecto impostor gana: vidrio roto + shake en el contenido */}
       {showEffects && !isCrewWin && <GlassBreakEffect />}
 
-      <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col items-center">
         <motion.div
-          className="w-full max-w-md flex flex-col items-center text-center px-3"
+          className="w-full max-w-md flex flex-col items-center text-center px-3 flex-shrink-0 gap-3 py-3"
           animate={
             showEffects && !isCrewWin
               ? {
@@ -1255,27 +1258,27 @@ function ResultPhase() {
             ease: "easeOut",
           }}
         >
-          <div className="relative w-full max-w-[200px] mx-auto mb-4 flex justify-center">
+          <div className="relative w-full max-w-[200px] mx-auto flex justify-center flex-shrink-0">
             <Image
               src={isCrewWin ? "/shelock.png" : "/jocker.png"}
               alt=""
               width={160}
               height={160}
-              className="object-contain w-full h-auto max-h-40"
+              className="object-contain w-full h-auto max-h-32"
               priority
               aria-hidden
             />
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-white">
             {isCrewWin ? "¡Has pillado a un Impostor!" : "¡El Impostor gana!"}
           </h1>
-          <p className="text-white/90 text-sm mb-6">
+          <p className="text-white/90 text-sm">
             {isCrewWin
               ? "¡Victoria! Ganan los Civiles."
               : "El Impostor se impuso. ¡A revancha!"}
           </p>
 
-          <div className="w-full rounded-2xl bg-card/95 border border-white/10 overflow-hidden mb-6">
+          <div className="w-full rounded-2xl bg-card/95 border border-white/10 overflow-hidden flex-shrink-0">
             <div className="px-4 py-3 border-b border-white/10">
               <p className="text-xs text-white/70">Palabra secreta</p>
               <p className="text-lg font-bold text-white mt-0.5">{phase.secretWord}</p>
@@ -1288,7 +1291,7 @@ function ResultPhase() {
         </motion.div>
       </div>
 
-      <div className="flex flex-col flex-shrink-0 w-full px-6 pt-10 pb-[calc(2.5rem+env(safe-area-inset-bottom))] space-y-4">
+      <div className="flex flex-col flex-shrink-0 w-full px-6 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] gap-3">
         <Button
           variant="accent"
           size="lg"
@@ -1392,7 +1395,7 @@ function ScorePhase() {
                         alt={player.name}
                         width={40}
                         height={40}
-                        className="object-cover"
+                        className={cn("object-cover", getAvatarObjectPosition(player.avatar))}
                       />
                     ) : (
                       <span className="flex h-full w-full items-center justify-center text-lg font-bold text-zinc-400">

@@ -15,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { PremiumCard } from "@/components/ui/premium-card"
+import { getAvatarObjectPosition } from "@/data/avatars"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -134,7 +135,7 @@ export default function ScorePage() {
                         alt={player.name}
                         width={32}
                         height={32}
-                        className="rounded-full object-cover"
+                        className={cn("rounded-full object-cover", getAvatarObjectPosition(player.avatar))}
                       />
                     ) : (
                       <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-sm font-bold text-zinc-400">
@@ -194,7 +195,7 @@ export default function ScorePage() {
                       alt={player.name}
                       width={40}
                       height={40}
-                      className="object-cover"
+                      className={cn("object-cover", getAvatarObjectPosition(player.avatar))}
                     />
                   ) : (
                     <span className="flex h-full w-full items-center justify-center text-lg font-bold text-zinc-400">

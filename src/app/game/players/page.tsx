@@ -6,7 +6,7 @@ import Link from "next/link"
 import { nanoid } from "nanoid"
 import { useRouter } from "next/navigation"
 import { useGameStore } from "@/features/game/store/useGameStore"
-import { AVATARS } from "@/data/avatars"
+import { AVATARS, getAvatarObjectPosition } from "@/data/avatars"
 import { MIN_PLAYERS, MAX_PLAYERS } from "@/lib/constants"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -163,7 +163,7 @@ export default function PlayersPage() {
                             alt="Avatar"
                             width={20}
                             height={20}
-                            className="rounded-full object-cover"
+                            className={`rounded-full object-cover ${getAvatarObjectPosition(player.avatar)}`}
                           />
                         ) : (
                           <span className="text-xs">Elegir</span>
@@ -228,7 +228,7 @@ className={`relative aspect-square rounded-lg overflow-hidden border-2 transitio
                     src={avatarSrc}
                     alt="Avatar"
                     fill
-                    className="object-cover"
+                    className={`object-cover ${getAvatarObjectPosition(avatarSrc)}`}
                   />
                 </button>
               ))}

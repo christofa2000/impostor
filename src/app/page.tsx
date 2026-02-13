@@ -27,9 +27,14 @@ export default function Home() {
           impostor.
         </p>
         <Link href="/game">
-          <Button variant="primaryGlow" size="premium">
-            Crear partida
-          </Button>
+        <Button
+  variant="primaryGlow"
+  size="premium"
+  className="px-10 py-6 text-xl md:text-2xl"
+>
+  Crear partida
+</Button>
+
         </Link>
       </div>
     </div>

@@ -14,3 +14,10 @@ export const AVATARS = [
 ] as const;
 
 export type AvatarSrc = (typeof AVATARS)[number];
+
+/** object-position para avatares que se ven mejor enfocando la parte superior (evita cortar la cabeza). */
+export function getAvatarObjectPosition(src: string): string {
+  return src === "/avatars/leinad.webp" || src === "/avatars/fede.webp"
+    ? "object-top"
+    : "";
+}
