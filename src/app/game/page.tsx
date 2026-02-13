@@ -78,43 +78,41 @@ function SetupPhase() {
   const categoriesOk = settings.categoryIds.length >= 1;
 
   return (
-    <div className="flex min-h-screen flex-col max-w-md mx-auto w-full px-4">
+    <div className="flex min-h-screen flex-col max-w-md mx-auto w-full px-3 py-4 sm:px-4">
       {/* Hero image */}
-      <div className="flex justify-center pt-4 pb-2">
+      <div className="flex justify-center pt-2 pb-1 sm:pt-4 sm:pb-2">
         <Image
           src="/impostor.png"
           alt="Impostor"
-          width={120}
-          height={120}
-          sizes="(max-width: 640px) 96px, 120px"
-          className="h-auto w-[96px] sm:w-[120px]"
+          width={100}
+          height={100}
+          sizes="(max-width: 640px) 80px, 96px"
+          className="h-auto w-20 sm:w-24"
           priority={false}
         />
       </div>
 
       {/* Header: nombre del juego */}
-      <div className="flex flex-col items-center text-center py-3 pb-5">
-        <h1
-          className="text-3xl font-semibold uppercase tracking-widest bg-gradient-to-r from-emerald-400 to-emerald-600 bg-clip-text text-transparent"
-        >
+      <div className="flex flex-col items-center text-center py-2 pb-4 sm:py-3 sm:pb-5">
+        <h1 className="text-2xl sm:text-3xl font-semibold uppercase tracking-widest bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-400 bg-clip-text text-transparent drop-shadow-lg">
           Impostor
         </h1>
       </div>
 
-      {/* Grid de tiles — 3 filas de altura uniforme */}
-      <div className="grid grid-cols-2 grid-rows-3 gap-4 pb-28 min-h-[510px] sm:min-h-[570px]">
+      {/* Grid de tiles — mobile-first */}
+      <div className="grid grid-cols-2 gap-3 pb-24 auto-rows-fr min-h-0">
         {/* 1) Jugadores */}
-        <Link href="/game/players" className="block h-full">
+        <Link href="/game/players" className="block h-full min-h-[160px]">
           <PremiumCard
             className={cn(
-              "relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4",
+              "relative h-full flex flex-col items-center justify-between text-center py-3 sm:py-4",
               playersOk
-                ? "border-2 border-emerald-400/50"
+                ? "border-2 border-blue-400/60 shadow-lg shadow-blue-500/20"
                 : "border border-white/20"
             )}
           >
             {playersOk && (
-              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90">
+              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 shadow-md shadow-blue-500/50">
                 <span className="text-white text-xs leading-none">✓</span>
               </div>
             )}
@@ -126,7 +124,9 @@ function SetupPhase() {
               <span
                 className={cn(
                   "rounded-full px-3 py-1 text-xs font-medium",
-                  playersOk ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                  playersOk
+                    ? "bg-blue-500/20 text-blue-400 border border-blue-400/30"
+                    : "bg-amber-500/20 text-amber-400 border border-amber-400/30"
                 )}
               >
                 {players.length} {players.length === 1 ? "jugador" : "jugadores"}
@@ -139,7 +139,7 @@ function SetupPhase() {
         </Link>
 
         {/* 2) Impostores */}
-        <PremiumCard className="h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 border border-white/10">
+        <PremiumCard className="h-full flex flex-col items-center justify-between text-center min-h-[160px] py-3 sm:py-4 border border-white/10">
           <div className="flex flex-col items-center">
             <span className="text-4xl mb-1">🕵️</span>
             <span className="text-base font-semibold text-zinc-50">Impostores</span>
@@ -181,17 +181,17 @@ function SetupPhase() {
         </PremiumCard>
 
         {/* 3) Categorías */}
-        <Link href="/game/categories" className="block h-full">
+        <Link href="/game/categories" className="block h-full min-h-[160px]">
           <PremiumCard
             className={cn(
-              "relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4",
+              "relative h-full flex flex-col items-center justify-between text-center py-3 sm:py-4",
               categoriesOk
-                ? "border-2 border-emerald-400/50"
+                ? "border-2 border-blue-400/60 shadow-lg shadow-blue-500/20"
                 : "border border-white/20"
             )}
           >
             {categoriesOk && (
-              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90">
+              <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 shadow-md shadow-blue-500/50">
                 <span className="text-white text-xs leading-none">✓</span>
               </div>
             )}
@@ -203,7 +203,9 @@ function SetupPhase() {
               <span
                 className={cn(
                   "rounded-full px-3 py-1 text-xs font-medium",
-                  categoriesOk ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"
+                  categoriesOk
+                    ? "bg-blue-500/20 text-blue-400 border border-blue-400/30"
+                    : "bg-amber-500/20 text-amber-400 border border-amber-400/30"
                 )}
               >
                 {settings.categoryIds.length}{" "}
@@ -217,24 +219,24 @@ function SetupPhase() {
         </Link>
 
         {/* 4) Duración y Meta — siempre OK, mostrar valor */}
-        <Link href="/game/duration" className="block h-full">
-          <PremiumCard className="relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 border-2 border-emerald-400/50">
-            <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/90">
+        <Link href="/game/duration" className="block h-full min-h-[160px]">
+          <PremiumCard className="relative h-full flex flex-col items-center justify-between text-center py-3 sm:py-4 border-2 border-blue-400/60 shadow-lg shadow-blue-500/20">
+            <div className="absolute top-2 right-2 flex h-6 w-6 items-center justify-center rounded-full bg-blue-500 shadow-md shadow-blue-500/50">
               <span className="text-white text-xs leading-none">✓</span>
             </div>
             <div className="flex flex-col items-center">
               <span className="text-4xl mb-2">⏱️</span>
               <span className="text-base font-semibold text-zinc-50">Duración y Meta</span>
             </div>
-            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-400">
+            <span className="rounded-full bg-blue-500/20 text-blue-400 border border-blue-400/30 px-3 py-1 text-xs font-medium">
               {roundMinutes} min · {winningScore} pts
             </span>
           </PremiumCard>
         </Link>
 
         {/* 5) Reglamento */}
-        <Link href="/game/rules" className="block h-full">
-          <PremiumCard className="relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 border border-white/10">
+        <Link href="/game/rules" className="block h-full min-h-[160px]">
+          <PremiumCard className="relative h-full flex flex-col items-center justify-between text-center py-3 sm:py-4 border border-white/10">
             <div className="flex flex-col items-center">
               <span className="text-3xl mb-1.5">📋</span>
               <span className="text-base font-semibold text-zinc-50">Reglamento</span>
@@ -256,7 +258,7 @@ function SetupPhase() {
               setHintDialogOpen(true);
             }
           }}
-          className="relative h-full flex flex-col items-center justify-between text-center min-h-[170px] sm:min-h-[190px] py-4 border border-white/10 cursor-pointer"
+          className="relative h-full flex flex-col items-center justify-between text-center min-h-[160px] py-3 sm:py-4 border border-white/10 cursor-pointer"
           aria-label="Configurar pista para impostores"
         >
           <div className="flex flex-col items-center">
@@ -286,7 +288,7 @@ function SetupPhase() {
                   className={cn(
                     "flex items-center justify-between rounded-xl border px-4 py-3 text-left text-sm font-medium transition-colors",
                     isSelected
-                      ? "border-emerald-400/50 bg-emerald-500/15 text-emerald-400"
+                      ? "border-blue-400/50 bg-blue-500/15 text-blue-400"
                       : "border-white/10 bg-white/5 text-zinc-50 hover:bg-white/10"
                   )}
                   aria-pressed={isSelected}
@@ -294,7 +296,7 @@ function SetupPhase() {
                 >
                   <span>{option.label}</span>
                   {isSelected && (
-                    <span className="text-emerald-400" aria-hidden>✓</span>
+                    <span className="text-blue-400" aria-hidden>✓</span>
                   )}
                 </button>
               );
@@ -304,12 +306,12 @@ function SetupPhase() {
       </Dialog>
 
       {/* Fixed bottom CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-50 max-w-md mx-auto w-full px-4 pb-6 pt-4">
+      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-md mx-auto px-3 pb-4 pt-3 sm:px-4 sm:pb-6 sm:pt-4">
         <Button
           onClick={handleStart}
           variant="primaryGlow"
           size="premium"
-          className="w-full"
+          className="w-full h-12 sm:h-14 min-h-[44px]"
         >
           Iniciar juego
         </Button>
@@ -745,14 +747,14 @@ function CountdownScreen() {
   if (phase.type !== "play" || phase.playSubPhase !== "countdown") return null
 
   return (
-    <div className="flex min-h-[70vh] flex-col items-center justify-center text-center px-4">
+    <div className="flex min-h-[70vh] flex-col items-center justify-center text-center px-3 sm:px-4">
       <p
-        className="text-lg font-semibold mb-2"
+        className="text-base sm:text-lg font-semibold mb-2"
         style={{ color: "hsl(50 100% 60%)" }}
       >
         {firstPlayer?.name ?? "Jugador"} empieza.
       </p>
-      <p className="text-xl font-bold text-white mb-8">¡Prepárate!</p>
+      <p className="text-lg sm:text-xl font-bold text-white mb-6 sm:mb-8">¡Prepárate!</p>
       <motion.div
         key={count}
         initial={{ scale: 0.3, opacity: 0 }}
@@ -763,7 +765,7 @@ function CountdownScreen() {
           stiffness: 400,
           damping: 15,
         }}
-        className="text-[clamp(6rem,25vw,10rem)] font-black tabular-nums text-white leading-none"
+        className="text-8xl sm:text-9xl font-black tabular-nums text-white leading-none"
       >
         {count > 0 ? count : ""}
       </motion.div>
@@ -808,17 +810,17 @@ function DebateTimerScreen() {
   if (phase.type !== "play" || phase.playSubPhase !== "debate") return null
 
   return (
-    <div className="flex flex-col items-center text-center px-4 min-h-[70vh]">
+    <div className="flex flex-col items-center text-center px-3 sm:px-4 min-h-[70vh]">
       <div className="flex items-center justify-center gap-2 mb-2">
-        <MessageCircle className="size-8 text-white" strokeWidth={2} aria-hidden />
-        <h1 className="text-3xl font-bold text-white">Debate</h1>
+        <MessageCircle className="size-7 sm:size-8 text-white" strokeWidth={2} aria-hidden />
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Debate</h1>
       </div>
-      <p className="text-white/90 text-sm max-w-sm mb-8">
+      <p className="text-white/90 text-sm max-w-sm mb-6 sm:mb-8">
         Uno por uno, los jugadores dicen una palabra o frase relacionada con la palabra secreta.
       </p>
 
       <motion.div
-        className="relative flex items-center justify-center w-[220px] h-[220px] mb-6"
+        className="relative flex items-center justify-center w-56 h-56 sm:w-64 sm:h-64 mb-6"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
@@ -863,7 +865,7 @@ function DebateTimerScreen() {
         onClick={startVote}
         variant="primaryGlow"
         size="lg"
-        className="w-full max-w-sm rounded-2xl py-6 text-lg font-semibold bg-emerald-500 hover:bg-emerald-600 text-white border-0"
+        className="w-full max-w-sm rounded-2xl py-6 text-lg font-semibold"
       >
         Votar
       </Button>
@@ -918,23 +920,23 @@ function VotePhase() {
 
   return (
     <>
-      <div className="w-full max-w-md flex flex-col items-center text-center">
-        <h1 className="text-3xl font-bold text-white mb-1">Votación</h1>
-        <p className="text-white/90 text-sm mb-6 max-w-sm">
+      <div className="w-full max-w-md flex flex-col items-center text-center px-3 sm:px-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Votación</h1>
+        <p className="text-white/90 text-sm mb-4 max-w-sm">
           {maxVotes > 1
             ? `Elegí hasta ${maxVotes} jugadores (máximo ${maxVotes} votos).`
             : "Discutí en grupo y decidí a quién quieren eliminar."}
         </p>
         {maxVotes > 1 && (
-          <p className="text-sm font-medium text-white/80 mb-4">
+          <p className="text-sm font-medium text-white/80 mb-3">
             Seleccionados: {selectedVoteIds.length}/{maxVotes}
           </p>
         )}
-        <h2 className="text-xl font-bold text-white mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-white mb-4">
           ¿Quién creen que es el Impostor?
         </h2>
 
-        <div className="grid grid-cols-2 gap-3 w-full mb-8">
+        <div className="grid grid-cols-2 gap-2.5 w-full mb-6">
           {players.map((player) => {
             const isSelected = selectedVoteIds.includes(player.id);
             const atLimit = selectedVoteIds.length >= maxVotes;
@@ -946,7 +948,7 @@ function VotePhase() {
                 disabled={disabled}
                 onClick={() => handleSelectVote(player.id)}
                 className={cn(
-                  "flex flex-col items-center justify-center rounded-2xl border-2 py-6 px-4 transition-all active:scale-[0.98]",
+                  "flex flex-col items-center justify-center rounded-xl border-2 py-4 px-3 transition-all active:scale-[0.98] min-h-[110px]",
                   "bg-card/90 border-white/20",
                   isSelected &&
                     "border-primary bg-primary/20",
@@ -955,20 +957,20 @@ function VotePhase() {
                 aria-pressed={isSelected}
                 aria-label={`Votar a ${player.name}`}
               >
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 text-white mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white mb-2 shrink-0">
                   {player.avatar ? (
                     <Image
                       src={player.avatar}
                       alt=""
-                      width={48}
-                      height={48}
-                      className="rounded-full object-cover w-12 h-12"
+                      width={40}
+                      height={40}
+                      className="rounded-full object-cover size-10"
                     />
                   ) : (
-                    <User className="size-8" aria-hidden />
+                    <User className="size-5" aria-hidden />
                   )}
                 </div>
-                <span className="text-base font-semibold text-white truncate w-full">
+                <span className="text-sm font-semibold text-white truncate w-full text-center">
                   {player.name}
                 </span>
               </button>
@@ -976,28 +978,26 @@ function VotePhase() {
           })}
         </div>
 
-        <div className="flex flex-col gap-3 w-full">
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setGuessDialogOpen(true)}
-              variant="outline"
-              className="flex-1 rounded-2xl border-white/30 bg-white/10 text-white hover:bg-white/20"
-            >
-              Adivinar palabra
-            </Button>
-            <Button
-              onClick={() => {
-                const err = confirmVote();
-                if (err) toast.error(err);
-              }}
-              disabled={selectedVoteIds.length !== maxVotes}
-              variant="primaryGlow"
-              size="lg"
-              className="w-full rounded-2xl py-6 text-lg font-semibold"
-            >
-              Confirmar voto
-            </Button>
-          </div>
+        <div className="flex flex-col gap-3 w-full mt-2">
+          <Button
+            onClick={() => {
+              const err = confirmVote();
+              if (err) toast.error(err);
+            }}
+            disabled={selectedVoteIds.length !== maxVotes}
+            variant="primaryGlow"
+            size="lg"
+            className="w-full rounded-2xl py-5 sm:py-6 text-base sm:text-lg font-bold min-h-[48px]"
+          >
+            Confirmar voto
+          </Button>
+          <Button
+            onClick={() => setGuessDialogOpen(true)}
+            variant="outline"
+            className="w-full rounded-2xl border-white/20 bg-white/5 text-white hover:bg-white/10 min-h-[48px]"
+          >
+            Adivinar palabra
+          </Button>
         </div>
       </div>
 
@@ -1230,7 +1230,7 @@ function ResultPhase() {
       {showEffects && !isCrewWin && <GlassBreakEffect />}
 
       <motion.div
-        className="w-full max-w-md flex flex-col items-center text-center"
+        className="w-full max-w-md flex flex-col items-center text-center px-3"
         animate={
           showEffects && !isCrewWin
             ? {
@@ -1243,34 +1243,34 @@ function ResultPhase() {
           ease: "easeOut",
         }}
       >
-        <div className="relative w-full max-w-[200px] mx-auto mb-6 flex justify-center">
+        <div className="relative w-full max-w-[200px] mx-auto mb-4 flex justify-center">
           <Image
             src={isCrewWin ? "/justicia.png" : "/jocker.png"}
             alt=""
-            width={200}
-            height={200}
-            className="object-contain w-full h-auto max-h-[180px]"
+            width={160}
+            height={160}
+            className="object-contain w-full h-auto max-h-40"
             priority
             aria-hidden
           />
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-white mb-2">
           {isCrewWin ? "¡Has pillado a un Impostor!" : "¡El Impostor gana!"}
         </h1>
-        <p className="text-white/90 text-sm mb-8">
+        <p className="text-white/90 text-sm mb-6">
           {isCrewWin
             ? "¡Victoria! Ganan los Civiles."
             : "El Impostor se impuso. ¡A revancha!"}
         </p>
 
-        <div className="w-full rounded-3xl bg-card/95 border border-white/20 overflow-hidden mb-8">
-          <div className="px-6 py-5 border-b border-white/20">
-            <p className="text-sm text-white/80">Palabra secreta</p>
-            <p className="text-xl font-bold text-white mt-1">{phase.secretWord}</p>
+        <div className="w-full rounded-2xl bg-card/95 border border-white/10 overflow-hidden mb-6">
+          <div className="px-4 py-3 border-b border-white/10">
+            <p className="text-xs text-white/70">Palabra secreta</p>
+            <p className="text-lg font-bold text-white mt-0.5">{phase.secretWord}</p>
           </div>
-          <div className="px-6 py-5">
-            <p className="text-sm text-white/80">Impostor{impostors.length > 1 ? "es" : ""}</p>
-            <p className="text-xl font-bold text-white mt-1">{impostorNames}</p>
+          <div className="px-4 py-3">
+            <p className="text-xs text-white/70">Impostor{impostors.length > 1 ? "es" : ""}</p>
+            <p className="text-lg font-bold text-white mt-0.5">{impostorNames}</p>
           </div>
         </div>
 
@@ -1278,7 +1278,7 @@ function ResultPhase() {
           <Button
             variant="accent"
             size="lg"
-            className="w-full rounded-2xl py-6 text-lg font-semibold"
+            className="w-full rounded-2xl py-5 sm:py-6 text-base sm:text-lg font-semibold min-h-[48px]"
             onClick={() => router.push("/game/score")}
           >
             Continuar

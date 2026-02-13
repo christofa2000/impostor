@@ -9,20 +9,26 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        primaryGlow:
-          "bg-primary text-primary-foreground hover:bg-primary/90",
+        default: "bg-blue-600 text-white hover:bg-blue-700",
+        primaryGlow: cn(
+          "bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700",
+          "hover:from-blue-600 hover:via-blue-700 hover:to-blue-800",
+          "text-white font-semibold",
+          "shadow-lg shadow-blue-500/40",
+          "hover:shadow-xl hover:shadow-blue-500/50",
+          "active:scale-[0.98] transition-all duration-200"
+        ),
         destructive:
           "bg-destructive text-white hover:bg-destructive/90",
         outline:
-          "border-[1px] border-white/20 bg-transparent hover:bg-accent hover:text-accent-foreground dark:bg-white/5 dark:border-white/20 dark:hover:bg-white/10",
+          "border border-white/20 bg-white/5 text-white hover:bg-blue-600/20 hover:border-blue-400/40 hover:text-white dark:bg-white/5 dark:border-white/20 dark:hover:bg-blue-600/20",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "bg-blue-600/80 text-white hover:bg-blue-600",
         accent:
-          "bg-accent text-accent-foreground hover:bg-accent/90",
+          "bg-blue-600 text-white hover:bg-blue-700",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+          "text-white/90 hover:bg-blue-600/20 hover:text-white",
+        link: "text-blue-400 underline-offset-4 hover:underline hover:text-blue-300",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

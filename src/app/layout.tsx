@@ -29,7 +29,7 @@ export default function RootLayout({
         className={`${sora.variable} ${geistMono.variable} font-sans antialiased`}
       >
         <div className="relative min-h-screen">
-          <main className="max-w-md mx-auto px-4 pt-6 pb-24 min-h-screen">
+          <main className="max-w-md mx-auto px-3 pt-4 pb-24 min-h-screen sm:px-4 sm:pt-6">
             {children}
           </main>
         </div>

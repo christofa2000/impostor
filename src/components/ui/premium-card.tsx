@@ -15,10 +15,14 @@ function PremiumCard({
     <div
       className={cn(
         "rounded-2xl",
-        "bg-card/40 backdrop-blur-xl",
-        "border border-primary/30 dark:border-secondary/30",
-        "p-6",
-        onClick && "cursor-pointer transition-all hover:bg-card/50 hover:border-primary/50 active:scale-[0.98]",
+        "bg-gradient-to-br from-card via-card to-card/95",
+        "backdrop-blur-md",
+        "border border-white/15",
+        "shadow-xl shadow-blue-500/5",
+        "p-4 sm:p-5",
+        "min-h-[160px]",
+        "transition-all duration-300",
+        onClick && "cursor-pointer hover:border-white/20 hover:shadow-blue-500/10 active:scale-[0.98]",
         className
       )}
       onClick={onClick}
