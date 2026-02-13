@@ -28,6 +28,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Confetti from "react-confetti";
 import { toast } from "sonner";
 import { MessageCircle, User } from "lucide-react";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 
 const HINT_MODE_OPTIONS: {
   value: GameSettings["hintMode"];
@@ -78,7 +79,10 @@ function SetupPhase() {
   const categoriesOk = settings.categoryIds.length >= 1;
 
   return (
-    <div className="min-h-[100dvh] flex flex-col max-w-md mx-auto w-full px-3 py-4 sm:px-4">
+    <div className="relative min-h-[100dvh] flex flex-col max-w-md mx-auto w-full px-3 py-4 sm:px-4">
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       {/* Contenido principal: flex-1 + min-h-0 permite que esta zona escale y haga scroll si sobra contenido */}
       <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         {/* Hero image */}
@@ -1253,7 +1257,7 @@ function ResultPhase() {
         >
           <div className="relative w-full max-w-[200px] mx-auto mb-4 flex justify-center">
             <Image
-              src={isCrewWin ? "/justicia.png" : "/jocker.png"}
+              src={isCrewWin ? "/shelock.png" : "/jocker.png"}
               alt=""
               width={160}
               height={160}

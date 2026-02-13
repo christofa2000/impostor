@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "shadcn/tailwind.css";
 
+/* Con darkMode: "class", las utilidades dark:* de Tailwind se aplican cuando
+   un ancestro (aquí <html>) tiene la clase "dark". Ej: dark:bg-card solo
+   aplica si existe .dark en un padre. Así controlamos tema sin media query. */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -53,9 +56,78 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+/* Modo claro (por defecto): gradiente vibrante y variables claras */
 :root {
   --radius: 0.75rem;
+  --body-gradient: linear-gradient(
+    180deg,
+    #8b00ff 0%,
+    #7c3aed 35%,
+    #6d28d9 70%,
+    #3b0764 100%
+  );
 
+  --background: rgba(255 255 255 / 0.12);
+  --foreground: hsl(0 0% 98%);
+
+  --card: rgba(255 255 255 / 0.2);
+  --card-foreground: hsl(0 0% 98%);
+
+  --popover: rgba(255 255 255 / 0.18);
+  --popover-foreground: hsl(0 0% 98%);
+
+  --primary: hsl(210 100% 60%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(180 95% 55%);
+  --secondary-foreground: hsl(0 0% 100%);
+
+  --muted: rgba(255 255 255 / 0.25);
+  --muted-foreground: hsl(0 0% 90%);
+
+  --accent: hsl(210 100% 60%);
+  --accent-foreground: hsl(0 0% 100%);
+
+  --destructive: hsl(0 90% 60%);
+
+  --border: rgba(255 255 255 / 0.3);
+  --input: rgba(255 255 255 / 0.28);
+  --ring: hsl(210 100% 60%);
+
+  --chart-1: hsl(210 100% 60%);
+  --chart-2: hsl(180 95% 55%);
+  --chart-3: hsl(200 95% 58%);
+  --chart-4: hsl(140 85% 55%);
+  --chart-5: hsl(190 90% 55%);
+
+  --sidebar: rgba(255 255 255 / 0.18);
+  --sidebar-foreground: hsl(0 0% 98%);
+  --sidebar-primary: hsl(210 100% 60%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: rgba(255 255 255 / 0.22);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: rgba(255 255 255 / 0.3);
+  --sidebar-ring: hsl(210 100% 60%);
+
+  --crew: hsl(180 95% 55%);
+  --crew-foreground: hsl(0 0% 100%);
+  --impostor: hsl(0 90% 60%);
+  --impostor-foreground: hsl(0 0% 100%);
+
+  --danger: hsl(0 90% 60%);
+  --info: hsl(210 100% 60%);
+  --success: hsl(140 85% 55%);
+}
+
+/* Modo oscuro: se aplica cuando <html> tiene la clase "dark" */
+.dark {
+  --body-gradient: linear-gradient(
+    160deg,
+    hsl(240 45% 22%) 0%,
+    hsl(238 42% 18%) 35%,
+    hsl(235 45% 15%) 65%,
+    hsl(232 42% 13%) 100%
+  );
   --background: hsl(240 40% 18%);
   --foreground: hsl(0 0% 98%);
 
@@ -108,11 +180,6 @@
   --success: hsl(140 85% 55%);
 }
 
-.dark {
-  --background: hsl(240 40% 18%);
-  --foreground: hsl(0 0% 98%);
-}
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -124,13 +191,7 @@
 
   body {
     @apply text-foreground h-full text-sm sm:text-base;
-    background: linear-gradient(
-      160deg,
-      hsl(240 45% 22%) 0%,
-      hsl(238 42% 18%) 35%,
-      hsl(235 45% 15%) 65%,
-      hsl(232 42% 13%) 100%
-    );
+    background: var(--body-gradient);
     background-attachment: fixed;
   }
 

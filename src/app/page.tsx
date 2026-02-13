@@ -1,11 +1,15 @@
 import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/common/ThemeToggle"
 import { APP_NAME } from "@/lib/constants"
 
 export default function Home() {
   return (
     <div className="flex min-h-screen items-center justify-center shadow-none">
+      <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
+        <ThemeToggle />
+      </div>
       <div className="flex w-full flex-col items-center gap-8 text-center shadow-none">
         <Image
           src="/impostor.png"
