@@ -40,8 +40,18 @@ async function main() {
     .toBuffer();
 
   writeFileSync(join(publicDir, "icon.png"), icon512);
+  writeFileSync(join(publicDir, "icon-512.png"), icon512);
   writeFileSync(join(appDir, "icon.png"), icon512);
-  console.log("OK public/icon.png y src/app/icon.png (512x512)");
+  console.log("OK public/icon.png, public/icon-512.png y src/app/icon.png (512x512)");
+
+  // 192x192 para PWA manifest
+  const icon192 = await sharp(sourcePath)
+    .resize(192, 192, resizeOpts(192, 192))
+    .ensureAlpha()
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+  writeFileSync(join(publicDir, "icon-192.png"), icon192);
+  console.log("OK public/icon-192.png (192x192)");
 
   // 180x180 apple-touch-icon (RGBA)
   const icon180 = await sharp(sourcePath)

@@ -180,6 +180,14 @@
   --success: hsl(140 85% 55%);
 }
 
+/* Safe area para notch y barra de estado (PWA standalone) */
+.safe-area-padding {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -187,12 +195,16 @@
 
   html {
     @apply h-full;
+    overflow-x: hidden;
+    overscroll-behavior: none;
   }
 
   body {
     @apply text-foreground h-full text-sm sm:text-base;
     background: var(--body-gradient);
     background-attachment: fixed;
+    overflow-x: hidden;
+    overscroll-behavior: none;
   }
 
   button {
