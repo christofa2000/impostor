@@ -6,6 +6,7 @@ export const AVATARS = [
   "/avatars/leia.webp",
   "/avatars/maradona.webp",
   "/avatars/micael.webp",
+  "/avatars/christian.webp",
   "/avatars/fede.webp",
   "/avatars/arik.webp",
   "/avatars/diego.webp",
